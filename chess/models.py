@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate
 
 class Club(models.Model):
     name = models.CharField(max_length=100)
+    code = models.CharField(max_length=15, unique=True)
 
     def __str__(self):
         return self.name
@@ -18,7 +19,7 @@ class Player(models.Model):
     opponent_two = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='two_times_ago_opponent', null=False, blank=True)
     opponent_three = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='three_times_ago_opponent', null=False, blank=True)
     grade = models.IntegerField(default=0)
-    club_name = models.ForeignKey(Club, on_delete=models.RESTRICT)
+    club = models.ForeignKey(Club, on_delete=models.RESTRICT)
     parent_name = models.CharField(max_length=100)
     parent_email = models.EmailField(max_length=200)
 
@@ -30,6 +31,7 @@ class LessonClass(models.Model):  # Renamed from Class to SchoolClass
     level = models.CharField(max_length=100)
     teacher = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='teacher')
     co_teacher = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='co_teacher', null=True)
+    club = models.ForeignKey(Club, on_delete=models.RESTRICT)
 
     def __str__(self):
         return self.teacher.name
@@ -37,7 +39,7 @@ class LessonClass(models.Model):  # Renamed from Class to SchoolClass
 
 class RegisteredUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    club_name = models.ForeignKey(Club, on_delete=models.RESTRICT, blank=True, null=True)
+    club = models.ForeignKey(Club, on_delete=models.RESTRICT, blank=True, null=True)
     is_director = models.BooleanField(default=False)
 
     def __str__(self):
@@ -54,6 +56,9 @@ class Game(models.Model):
         BLACK_WIN = 'B', 'Black'
         DRAW = 'D', 'Draw'
 
+    week_number = models.IntegerField()
+    date_of_match = models.DateField()
+    club = models.ForeignKey(Club, on_delete=models.RESTRICT)
     white = models.ForeignKey(Player, on_delete=models.RESTRICT, related_name='games_as_white')
     black = models.ForeignKey(Player, on_delete=models.RESTRICT, related_name='games_as_black')
     board_letter = models.CharField(max_length=1)

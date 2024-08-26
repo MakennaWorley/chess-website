@@ -6,7 +6,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
 from .forms import SignUpForm
-from .models import RegisteredUser
+from .models import RegisteredUser, Club
+
 
 def login_view(request):
     if request.method == 'POST':
@@ -39,14 +40,23 @@ def signup_view(request):
     else:
         form = SignUpForm()
 
-    return render(request, 'chess/signup.html', {'form': form})
+    return render(request, 'chess/signup.html', {'form': form, 'title': 'Sign Up'})
 
 
 def home_view(request):
     if request.user.is_authenticated:
-        return render(request, 'chess/home.html', {'username': request.user.username})
+        registered_user = RegisteredUser.objects.get(user=request.user)
+        if registered_user.club:
+            club_name = registered_user.club
+        else:
+            club_name = None  # or some default value if the user is not associated with any club
+        return render(request, 'chess/home.html', {
+            'username': request.user.username,
+            'club_name': club_name,
+            'title': 'Home'
+        })
     else:
-        return redirect('login')
+        return redirect('login', {'title': 'Login'})
 
 
 def register(request):
