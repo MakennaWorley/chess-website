@@ -4,8 +4,10 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.core.validators import RegexValidator
 
-from .forms import SignUpForm
+from .forms import SignUpForm, SearchForm
 from .models import RegisteredUser, Player, LessonClass, Game #, Club
 
 
@@ -81,3 +83,44 @@ def register(request):
 def profile(request):
     registered_user = RegisteredUser.objects.get(user=request.user)
     return render(request, 'chess/home.html', {'registered_user': registered_user})
+
+
+def search_results(request):
+    form = SearchForm(request.GET or None)
+    results = []
+
+    if form.is_valid():
+        query = form.cleaned_data['query']
+        selected_models = form.cleaned_data['models']
+
+        #searching a board
+
+        #searching a player
+        if 'Player' in selected_models or 'All' in selected_models:
+            player_results = Player.objects.filter(name__icontains=query)
+            results.extend(player_results)
+
+        if 'LessonClass' in selected_models or 'All' in selected_models:
+            lesson_results = LessonClass.objects.filter(
+                Q(teacher__name__icontains=query) | Q(co_teacher__name__icontains=query)
+            )
+            results.extend(lesson_results)
+
+        if 'Game' in selected_models or 'All' in selected_models:
+            game_results = Game.objects.filter(
+                Q(white__name__icontains=query) |
+                Q(black__name__icontains=query)
+            )
+            results.extend(game_results)
+
+    if not results:
+        return render(request, 'chess/search.html', {
+            'form': form,
+            'results': ["No results found"],
+        })
+
+    context = {
+        'form': form,
+        'results': results
+    }
+    return render(request, 'chess/search.html', context)

@@ -59,3 +59,28 @@ class SignUpForm(forms.ModelForm):
         print(registered_user, registered_user.club)'''
         registered_user.save()
         return user
+
+
+MODEL_CHOICES = [
+    ('Player', 'Player'),
+    ('LessonClass', 'LessonClass'),
+    ('Game', 'Game'),
+    ('All', 'All Models'),
+]
+
+class SearchForm(forms.Form):
+    query = forms.CharField(
+        label='Please enter a player name',
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Enter search term',
+            'class': 'form-control'
+        })
+    )
+    models = forms.MultipleChoiceField(
+        choices=MODEL_CHOICES,
+        widget=forms.CheckboxSelectMultiple(),
+        initial=['All'],
+        required=False
+    )
