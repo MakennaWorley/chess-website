@@ -161,4 +161,5 @@ cython_debug/
 
 # makenna stuff
 github/
-migrations/
+chess/migrations/
+.idea/
