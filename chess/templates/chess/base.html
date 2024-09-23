@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess App</title>
+    <link rel="stylesheet" href="../../static/main.css">
+    <script src="../../static/main.js"></script>
+</head>
+<body>
+    {% if user.is_authenticated %}
+        <h1 class="center">Welcome, {{ username }}!</h1>
+
+        <nav>
+            <ul>
+                <li><a href="{% url 'home' %}">Home</a></li>
+                <li><a href="search.html">Search</a></li>
+                <li><a href="manual-add.html">Manual Add</a></li>
+                <li><a href="manual-edit.html">Manual Edit</a></li>
+                <li><a href="manual-delete.html">Manual Delete</a></li>
+                <li><a href="import-players.html">Import Players</a></li>
+                <li><a href="import-results.html">Import Results</a></li>
+                <li><a href="pair.html">Pair</a></li>
+                <li><a href="help.html">Help</a></li>
+            </ul>
+        </nav>
+    {% else %}
+        <h1 class="center">Please log in to access the Chess App</h1>
+    {% endif %}
+
+    <div class="content">
+        {% block content %} {%  endblock %}
+    </div>
+</body>
+<footer>
+    <p class="center">Created by Makenna Worley <a href="https://www.makennaworley.com" target="_blank">website</a></p>
+</footer>
+</html>

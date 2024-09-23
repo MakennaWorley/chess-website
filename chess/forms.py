@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 
-from .models import RegisteredUser, Club
+from .models import RegisteredUser #, Club
 
 
 class LoginForm(AuthenticationForm):
@@ -17,13 +17,13 @@ class SignUpForm(forms.ModelForm):
     last_name = forms.CharField(label='Last Name', max_length=100, required=True)
     username = forms.CharField(max_length=100, required=True)
     email = forms.EmailField(required=True)
-    club_code = forms.CharField(max_length=100, required=False, label="Club Code (optional)")
+    #club_code = forms.CharField(max_length=100, required=False, label="Club Code (optional)")
     password1 = forms.CharField(widget=forms.PasswordInput(), label="Password")
     password2 = forms.CharField(widget=forms.PasswordInput(), label="Confirm Password")
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'club_code']
+        fields = ['username', 'email', 'first_name', 'last_name'] #, 'club_code']
 
     def clean(self):
         cleaned_data = super().clean()
@@ -44,18 +44,18 @@ class SignUpForm(forms.ModelForm):
             user.save()
 
         # Validate and assign the club code
-        club_code = self.cleaned_data.get("club_code")
+        #club_code = self.cleaned_data.get("club_code")
         registered_user, created = RegisteredUser.objects.get_or_create(user=user)
 
-        if club_code:
+        '''if club_code:
             try:
                 registered_user.club = Club.objects.get(code=club_code)
-                print(registered_user, registered_user.club)
-                registered_user.save()
+                print(registered_user, registered_user.club, Club.objects.get(code=club_code))
+                registered_user.club.save()
                 return user
             except Club.DoesNotExist:
                 registered_user.club = None
 
-        print(registered_user, registered_user.club)
+        print(registered_user, registered_user.club)'''
         registered_user.save()
         return user
