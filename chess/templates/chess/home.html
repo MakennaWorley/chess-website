@@ -1,10 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Home</title>
-</head>
-<body>
-    <h1>Welcome, {{ username }}!</h1>
-</body>
-</html>
+{%  extends 'chess/base.html' %}
+
+{% block content %}
+
+    <div class="block-container-list">
+        <div class="block-text">
+            <h2>Players</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Rating</th>
+                        <th>Grade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in players %}
+                        <tr>
+                            <td>{{ player.name }}</td>
+                            <td>{{ player.rating }}</td>
+                            <td>{{ player.grade }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="block-text">
+            <h2>Classes</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Teacher(s)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class in class_list %}
+                        <tr>
+                            <td>{{ class.level }}</td>
+                            <td>{{ class.get_teachers }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="block-text">
+            <h2>Recent Games</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Board</th>
+                        <th>White Player</th>
+                        <th>Black Player</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for game in games %}
+                        <tr>
+                            <td>{{ game.get_board }}</td>
+                            <td>{{ game.white }}</td>
+                            <td>{{ game.black }}</td>
+                            <td>{{ game.result }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}

@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 
-from .models import RegisteredUser
+from .models import RegisteredUser #, Club
 
 
 class LoginForm(AuthenticationForm):
@@ -13,15 +13,17 @@ class LoginForm(AuthenticationForm):
 
 
 class SignUpForm(forms.ModelForm):
+    first_name = forms.CharField(label='First Name', max_length=100, required=True)
+    last_name = forms.CharField(label='Last Name', max_length=100, required=True)
     username = forms.CharField(max_length=100, required=True)
     email = forms.EmailField(required=True)
-    club_code = forms.CharField(max_length=100, required=False, label="Club Code (optional)")
+    #club_code = forms.CharField(max_length=100, required=False, label="Club Code (optional)")
     password1 = forms.CharField(widget=forms.PasswordInput(), label="Password")
     password2 = forms.CharField(widget=forms.PasswordInput(), label="Confirm Password")
 
     class Meta:
         model = User
-        fields = ['username', 'email']
+        fields = ['username', 'email', 'first_name', 'last_name'] #, 'club_code']
 
     def clean(self):
         cleaned_data = super().clean()
@@ -36,30 +38,49 @@ class SignUpForm(forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data["password1"])
+
+        # Save the user to create an instance in the database
         if commit:
+            user.save()
+
+        # Validate and assign the club code
+        #club_code = self.cleaned_data.get("club_code")
+        registered_user, created = RegisteredUser.objects.get_or_create(user=user)
+
+        '''if club_code:
             try:
-                user.save()
-                club_code = self.cleaned_data.get("club_code")
-                if club_code:
-                    try:
-                        club = Club.objects.get(name=club_code)
-                    except ObjectDoesNotExist:
-                        club = None
-                else:
-                    club = None
+                registered_user.club = Club.objects.get(code=club_code)
+                print(registered_user, registered_user.club, Club.objects.get(code=club_code))
+                registered_user.club.save()
+                return user
+            except Club.DoesNotExist:
+                registered_user.club = None
 
-                # Check if a RegisteredUser already exists
-                try:
-                    registered_user, created = RegisteredUser.objects.get_or_create(user=user,
-                                                                                    defaults={'club_name': club})
-                    if not created:
-                        registered_user.club_name = club
-                        registered_user.save()
-                except IntegrityError:
-                    pass  # Handle this scenario or log an error if needed
-
-            except IntegrityError as e:
-                # Log the error or handle it as appropriate
-                print(f"IntegrityError occurred: {e}")
-                return None
+        print(registered_user, registered_user.club)'''
+        registered_user.save()
         return user
+
+
+MODEL_CHOICES = [
+    ('Player', 'Player'),
+    ('LessonClass', 'LessonClass'),
+    ('Game', 'Game'),
+    ('All', 'All Models'),
+]
+
+class SearchForm(forms.Form):
+    query = forms.CharField(
+        label='Please enter a player name',
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Enter search term',
+            'class': 'form-control'
+        })
+    )
+    models = forms.MultipleChoiceField(
+        choices=MODEL_CHOICES,
+        widget=forms.CheckboxSelectMultiple(),
+        initial=['All'],
+        required=False
+    )
