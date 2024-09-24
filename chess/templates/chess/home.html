@@ -60,8 +60,8 @@
                     {% for game in games %}
                         <tr>
                             <td>{{ game.get_board }}</td>
-                            <td>{{ game.white }}</td>
-                            <td>{{ game.black }}</td>
+                            <td>{{ game.white.name }}</td>
+                            <td>{{ game.black.name }}</td>
                             <td>{{ game.result }}</td>
                         </tr>
                     {% endfor %}

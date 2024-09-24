@@ -121,3 +121,23 @@ p {
     nav ul li a:hover {
         background-color: #111;
     }
+
+    nav ul li button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        text-align: center;
+        padding: 14px 16px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        height: 100%;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    nav ul li button:hover {
+        background-color: #111;
+    }

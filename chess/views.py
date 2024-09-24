@@ -91,27 +91,49 @@ def search_results(request):
 
     if form.is_valid():
         query = form.cleaned_data['query']
+        search_type = form.cleaned_data['search_board']
         selected_models = form.cleaned_data['models']
 
         #searching a board
+        if search_type == 'Board':
+            letter = ''
+            number = -1
 
-        #searching a player
-        if 'Player' in selected_models or 'All' in selected_models:
-            player_results = Player.objects.filter(name__icontains=query)
-            results.extend(player_results)
+            if query[0].isalpha() and query[1:].isdigit():
+                letter = query[0]
+                number = int(query[1:])
+            elif query[-1].isalpha() and query[:-1].isdigit():
+                letter = query[-1]
+                number = int(query[:-1])
+            else:
+                return render(request, 'chess/search.html', {
+                    'form': form,
+                    'results': ["Unable to find board " + query],
+                })
 
-        if 'LessonClass' in selected_models or 'All' in selected_models:
-            lesson_results = LessonClass.objects.filter(
-                Q(teacher__name__icontains=query) | Q(co_teacher__name__icontains=query)
-            )
-            results.extend(lesson_results)
-
-        if 'Game' in selected_models or 'All' in selected_models:
             game_results = Game.objects.filter(
-                Q(white__name__icontains=query) |
-                Q(black__name__icontains=query)
+                Q(board_letter=letter) and Q(board_number=number)
             )
             results.extend(game_results)
+
+        #searching a player
+        else:
+            if 'Player' in selected_models or 'All' in selected_models:
+                player_results = Player.objects.filter(name__icontains=query)
+                results.extend(player_results)
+
+            if 'LessonClass' in selected_models or 'All' in selected_models:
+                lesson_results = LessonClass.objects.filter(
+                    Q(teacher__name__icontains=query) | Q(co_teacher__name__icontains=query)
+                )
+                results.extend(lesson_results)
+
+            if 'Game' in selected_models or 'All' in selected_models:
+                game_results = Game.objects.filter(
+                    Q(white__name__icontains=query) |
+                    Q(black__name__icontains=query)
+                )
+                results.extend(game_results)
 
     if not results:
         return render(request, 'chess/search.html', {

@@ -25,6 +25,7 @@ class Player(models.Model):
     opponent_two = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='two_times_ago_opponent', null=True, blank=True)
     opponent_three = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='three_times_ago_opponent', null=True, blank=True)
     grade = models.IntegerField(default=None, blank=True, null=True)
+    lesson_class = models.ForeignKey('LessonClass', on_delete=models.RESTRICT, related_name='last_time_opponent', blank=True, null=True)
     #club = models.ForeignKey(Club, on_delete=models.RESTRICT)
     parent_name = models.CharField(max_length=100, blank=True, null=True)
     parent_email = models.EmailField(max_length=200, blank=True, null=True)
@@ -35,10 +36,13 @@ class Player(models.Model):
     end_at = models.DateTimeField(default=None, blank=True, null=True)
 
     def __str__(self):
-        return self.name
+        if self.lesson_class:
+            return self.name + " " + str(self.rating) + " " + self.lesson_class.level
+        else:
+            return self.name + " " + str(self.rating) + " No class assigned"
 
 
-class LessonClass(models.Model):  # Renamed from Class to SchoolClass
+class LessonClass(models.Model):
     level = models.CharField(max_length=100)
     teacher = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='teacher')
     co_teacher = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='co_teacher', blank=True, null=True)
