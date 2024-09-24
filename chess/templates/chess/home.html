@@ -11,6 +11,7 @@
                         <th>Name</th>
                         <th>Rating</th>
                         <th>Grade</th>
+                        <th>Coach(s)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -19,6 +20,7 @@
                             <td>{{ player.name }}</td>
                             <td>{{ player.rating }}</td>
                             <td>{{ player.grade }}</td>
+                            <td>{{ player.lesson_class.get_teachers }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -30,14 +32,12 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Name</th>
                         <th>Teacher(s)</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for class in class_list %}
                         <tr>
-                            <td>{{ class.level }}</td>
                             <td>{{ class.get_teachers }}</td>
                         </tr>
                     {% endfor %}

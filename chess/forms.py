@@ -66,6 +66,7 @@ class SignUpForm(forms.ModelForm):
 SEARCH_CHOICES = [
     ('Player', 'Player'),
     ('Board', 'Board'),
+    ('Class', 'Class')
 ]
 
 MODEL_CHOICES = [

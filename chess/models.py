@@ -19,16 +19,23 @@ from django.contrib.auth import authenticate
 
 
 class Player(models.Model):
-    name = models.CharField(max_length=100)
-    rating = models.IntegerField()
+    last_name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=100)
+    rating = models.IntegerField(default=100)
+    grade = models.IntegerField(default=None, blank=True, null=True)
+    lesson_class = models.ForeignKey('LessonClass', on_delete=models.RESTRICT, related_name='player_class', blank=True, null=True)
+    beginning_rating = models.IntegerField(default=100, blank=True, null=True)
+    rating_change = models.IntegerField(default=None, blank=True, null=True)
+    active_member = models.BooleanField(default=True)
+
     opponent_one = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='last_time_opponent', null=True, blank=True)
     opponent_two = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='two_times_ago_opponent', null=True, blank=True)
     opponent_three = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='three_times_ago_opponent', null=True, blank=True)
-    grade = models.IntegerField(default=None, blank=True, null=True)
-    lesson_class = models.ForeignKey('LessonClass', on_delete=models.RESTRICT, related_name='last_time_opponent', blank=True, null=True)
     #club = models.ForeignKey(Club, on_delete=models.RESTRICT)
-    parent_name = models.CharField(max_length=100, blank=True, null=True)
-    parent_email = models.EmailField(max_length=200, blank=True, null=True)
+    parent_or_guardian_name = models.CharField(max_length=100, blank=True, null=True)
+    email = models.EmailField(max_length=200, blank=True, null=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    additional_info = models.TextField(blank=True, null=True)
 
     modified_by = models.ForeignKey(User, on_delete=models.RESTRICT)
     is_active = models.BooleanField(default=True)
@@ -37,13 +44,15 @@ class Player(models.Model):
 
     def __str__(self):
         if self.lesson_class:
-            return self.name + " " + str(self.rating) + " " + self.lesson_class.level
+            return self.name() + " | "+ str(self.rating) + " | " + self.lesson_class.get_teachers()
         else:
-            return self.name + " " + str(self.rating) + " No class assigned"
+            return self.name() + " | "+ str(self.rating) + " | No class assigned"
+
+    def name(self):
+        return self.last_name + ", " + self.first_name
 
 
 class LessonClass(models.Model):
-    level = models.CharField(max_length=100)
     teacher = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='teacher')
     co_teacher = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='co_teacher', blank=True, null=True)
     #club = models.ForeignKey(Club, on_delete=models.RESTRICT)
@@ -54,16 +63,13 @@ class LessonClass(models.Model):
     end_at = models.DateTimeField(default=None, blank=True, null=True)
 
     def __str__(self):
-        if self.co_teacher:
-            return self.level + ": " + self.teacher.name + " and " + self.co_teacher.name
-        else:
-            return self.level + " " + self.teacher.name
+        return self.get_teachers()
 
     def get_teachers(self):
         if self.co_teacher:
-            return self.teacher.name + " and " + self.co_teacher.name
+            return self.teacher.first_name + " & " + self.co_teacher.first_name
         else:
-            return self.teacher.name
+            return self.teacher.first_name
 
 
 class RegisteredUser(models.Model):
@@ -105,7 +111,7 @@ class Game(models.Model):
     end_at = models.DateTimeField(default=None, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.board_letter}{self.board_number}: White- {self.white.name}, Black- {self.black.name}"
+        return f"{self.board_letter}{self.board_number} | White- {self.white.last_name + ", " + self.white.first_name} | Black- {self.black.last_name + ", " + self.black.first_name}"
 
     def get_board(self):
-        return "" + self.board_letter + self.board_number.__str__() + ""
+        return "" + self.board_letter + str(self.board_number) + ""

@@ -99,10 +99,10 @@ def search_results(request):
             letter = ''
             number = -1
 
-            if query[0].isalpha() and query[1:].isdigit():
+            if len(query) >= 2 and query[0].isalpha() and query[1:].isdigit():
                 letter = query[0]
                 number = int(query[1:])
-            elif query[-1].isalpha() and query[:-1].isdigit():
+            elif len(query) >= 2 and query[-1].isalpha() and query[:-1].isdigit():
                 letter = query[-1]
                 number = int(query[:-1])
             else:
@@ -112,28 +112,42 @@ def search_results(request):
                 })
 
             game_results = Game.objects.filter(
-                Q(board_letter=letter) and Q(board_number=number)
+                Q(board_letter=letter) & Q(board_number=number)
             )
             results.extend(game_results)
 
         #searching a player
-        else:
+        elif search_type == 'Player':
             if 'Player' in selected_models or 'All' in selected_models:
-                player_results = Player.objects.filter(name__icontains=query)
+                player_results = Player.objects.filter(
+                    Q(first_name__icontains=query) | Q(last_name__icontains=query)
+                )
                 results.extend(player_results)
 
             if 'LessonClass' in selected_models or 'All' in selected_models:
                 lesson_results = LessonClass.objects.filter(
-                    Q(teacher__name__icontains=query) | Q(co_teacher__name__icontains=query)
+                    Q(teacher__first_name__icontains=query) |
+                    Q(teacher__last_name__icontains=query) |
+                    Q(co_teacher__first_name__icontains=query) |
+                    Q(co_teacher__last_name__icontains=query)
                 )
                 results.extend(lesson_results)
 
             if 'Game' in selected_models or 'All' in selected_models:
                 game_results = Game.objects.filter(
-                    Q(white__name__icontains=query) |
-                    Q(black__name__icontains=query)
+                    Q(white__first_name__icontains=query) |
+                    Q(white__last_name__icontains=query) |
+                    Q(black__first_name__icontains=query) |
+                    Q(black__last_name__icontains=query)
                 )
                 results.extend(game_results)
+
+        else:
+            players = Player.objects.filter(
+                Q(lesson_class__teacher__first_name__icontains=query) |
+                Q(lesson_class__co_teacher__first_name__icontains=query)
+            )
+            results.extend(players)
 
     if not results:
         return render(request, 'chess/search.html', {
