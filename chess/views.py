@@ -1,17 +1,22 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.contrib.auth.models import User
 from django.contrib import messages
+from django.contrib.auth import login, authenticate
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.db.models import Q
-from django.core.validators import RegexValidator
-
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, redirect
+from django.urls import path
 from .forms import SignUpForm, SearchForm
 from .models import RegisteredUser, Player, LessonClass, Game #, Club
+#from .decorators import redirect_if_authenticated
 
 
+#@redirect_if_authenticated
 def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -20,17 +25,21 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                messages.info(request, f"You are now logged in as {username}.")
-                return redirect('home')
+                next_url = request.GET.get('next')
+                if next_url:
+                    return HttpResponseRedirect(next_url)
+                else:
+                    return redirect('home')
             else:
                 messages.error(request, "Invalid username or password.")
         else:
             messages.error(request, "Invalid username or password.")
     else:
         form = AuthenticationForm()
-    return render(request, 'chess/login.html', {'form': form, 'title': 'Login'})
+    return render(request, 'chess/login.html', {'form': form})
 
 
+#@redirect_if_authenticated
 def signup_view(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
@@ -42,7 +51,7 @@ def signup_view(request):
     else:
         form = SignUpForm()
 
-    return render(request, 'chess/signup.html', {'form': form, 'title': 'Sign Up'})
+    return render(request, 'chess/signup.html', {'form': form})
 
 
 def home_view(request):
@@ -65,7 +74,7 @@ def home_view(request):
             'games': games,
         })
     else:
-        return redirect('login', {'title': 'Login'})
+        return redirect('login/', {'title': 'Login'})
 
 
 def register(request):
@@ -78,11 +87,6 @@ def register(request):
     else:
         form = UserCreationForm()
     return render(request, 'chess/signup.html', {'form': form})
-
-@login_required
-def profile(request):
-    registered_user = RegisteredUser.objects.get(user=request.user)
-    return render(request, 'chess/home.html', {'registered_user': registered_user})
 
 
 def search_results(request):
