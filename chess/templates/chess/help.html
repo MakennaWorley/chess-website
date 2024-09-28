@@ -1,0 +1,39 @@
+{%  extends 'chess/base.html' %}
+
+{% block content %}
+    <div>
+        <h1>Help page</h1>
+        <h2>Home</h2>
+        <p class="indent">This is a high level overview of the data stored on the website.</p>
+        <p class="indent">On the left, you can see the names, ratings, grade, and coaches of the students top 10 students.
+            I will add a checkbox to toggle the teachers into the list.</p>
+        <p class="indent">This also shows the Classes that are available for any student to be assigned to which will be
+            reflected in the exported rating sheet!</p>
+        <p class="indent">On the right, you can see the number of games per week and the date of the match. This can be used
+            to reference if next week's pairings have been made!</p>
+        
+        <h2>Search</h2>
+            <p class="indent">This is where you can search for any specific keyword in the database.</p>
+            <p class="indent">The "Searching for" selection means where you want to search. Like if you want to search through
+                all possible players, all possible games, or all players in a specific class.</p>
+            <p class="indent">I will also add a little pencil icon which would let you edit that specific result.</p>
+        
+        <h2>Manual Change</h2>
+            <p class="indent">This hasn't been added yet, but this is where you can add a class or player manually. Or set
+                up the database for the next year.</p>
+        
+        <h2>Input Results</h2>
+            <p class="indent">This hasn't been added yet, but this is where you would search up the date and add the results.
+                With any subsitution that happened, you will have to edit that row manually. On submission, this will then
+                update all the ratings based on the result of the game. Once you see a "success" message, there will be a "download
+                Pairings" button. It is also safe to go to "Pair" and pair your next week of games!</p>
+        
+        <h2>Pair</h2>
+            <p class="indent">This hasn't been added yet, but this is where you would have the computer do the pairings! If
+                you have a specific match (such as a teacher vs student) in mind, you need to add those games BEFORE you hit
+                "Pair!" After a success message, you will now have a "Download Pairings" button.</p>
+        <h2>Didn't Find the Answer You Were Looking For?</h2>
+            <p class="indent">Contact me at totally_my_email@email.com or text me at Not-To-Day!</p>
+    
+    </div>
+{% endblock %}

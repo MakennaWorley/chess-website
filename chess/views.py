@@ -76,7 +76,11 @@ def home_view(request):
             'games': games,
         })
     else:
-        return redirect('login/', {'title': 'Login'})
+        return redirect('login/', )
+
+
+def help_view(request):
+    return render(request, 'chess/help.html', )
 
 
 def register(request):
@@ -98,7 +102,6 @@ def search_results(request):
     if form.is_valid():
         query = form.cleaned_data['query']
         search_type = form.cleaned_data['search_board']
-        selected_models = form.cleaned_data['models']
 
         #searching a board
         if search_type == 'Board':
@@ -124,29 +127,10 @@ def search_results(request):
 
         #searching a player
         elif search_type == 'Player':
-            if 'Player' in selected_models or 'All' in selected_models:
-                player_results = Player.objects.filter(
-                    Q(first_name__icontains=query) | Q(last_name__icontains=query)
-                )
-                results.extend(player_results)
-
-            if 'LessonClass' in selected_models or 'All' in selected_models:
-                lesson_results = LessonClass.objects.filter(
-                    Q(teacher__first_name__icontains=query) |
-                    Q(teacher__last_name__icontains=query) |
-                    Q(co_teacher__first_name__icontains=query) |
-                    Q(co_teacher__last_name__icontains=query)
-                )
-                results.extend(lesson_results)
-
-            if 'Game' in selected_models or 'All' in selected_models:
-                game_results = Game.objects.filter(
-                    Q(white__first_name__icontains=query) |
-                    Q(white__last_name__icontains=query) |
-                    Q(black__first_name__icontains=query) |
-                    Q(black__last_name__icontains=query)
-                )
-                results.extend(game_results)
+            player_results = Player.objects.filter(
+                Q(first_name__icontains=query) | Q(last_name__icontains=query)
+            )
+            results.extend(player_results)
 
         else:
             players = Player.objects.filter(

@@ -88,9 +88,3 @@ class SearchForm(forms.Form):
         max_length=100,
         required=True,
     )
-    models = forms.MultipleChoiceField(
-        choices=MODEL_CHOICES,
-        widget=forms.CheckboxSelectMultiple(),
-        initial=['All'],
-        required=False
-    )

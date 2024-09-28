@@ -163,3 +163,4 @@ cython_debug/
 github/
 chess/migrations/
 .idea/
+files/
