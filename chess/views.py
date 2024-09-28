@@ -3,10 +3,12 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.db.models import Count, Q
 from django.db.models.functions import TruncWeek
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse, FileResponse
 from django.shortcuts import render, redirect
+
 from .forms import SignUpForm, SearchForm
 from .models import RegisteredUser, Player, LessonClass, Game #, Club
+from .write_to_file import write_ratings
 
 
 def login_view(request):
@@ -46,6 +48,18 @@ def signup_view(request):
     else:
         form = SignUpForm()
 
+    return render(request, 'chess/signup.html', {'form': form})
+
+
+def register(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            RegisteredUser.objects.create(user=user)
+            return redirect('login')  # Adjust the redirect as needed
+    else:
+        form = UserCreationForm()
     return render(request, 'chess/signup.html', {'form': form})
 
 
@@ -93,18 +107,6 @@ def pair_view(request):
     return render(request, 'chess/pair.html', )
 
 
-def register(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            RegisteredUser.objects.create(user=user)
-            return redirect('login')  # Adjust the redirect as needed
-    else:
-        form = UserCreationForm()
-    return render(request, 'chess/signup.html', {'form': form})
-
-
 def search_results(request):
     form = SearchForm(request.GET or None)
     results = []
@@ -131,21 +133,21 @@ def search_results(request):
                 })
 
             game_results = Game.objects.filter(
-                Q(board_letter=letter) & Q(board_number=number)
+                Q(board_letter=letter) & Q(board_number=number) & Q(is_active=True)
             )
             results.extend(game_results)
 
         #searching a player
         elif search_type == 'Player':
             player_results = Player.objects.filter(
-                Q(first_name__icontains=query) | Q(last_name__icontains=query)
+                Q(first_name__icontains=query) & Q(is_active=True) | Q(last_name__icontains=query) & Q(is_active=True)
             )
             results.extend(player_results)
 
         else:
             players = Player.objects.filter(
-                Q(lesson_class__teacher__first_name__icontains=query) |
-                Q(lesson_class__co_teacher__first_name__icontains=query)
+                Q(lesson_class__teacher__first_name__icontains=query) & Q(is_active=True) |
+                Q(lesson_class__co_teacher__first_name__icontains=query) & Q(is_active=True)
             )
             results.extend(players)
 
@@ -160,3 +162,12 @@ def search_results(request):
         'results': results
     }
     return render(request, 'chess/search.html', context)
+
+
+def download_ratings(request):
+    file_path = write_ratings()
+
+    with open(file_path, 'rb') as excel_file:
+        response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="ratings.xlsx"'
+        return response

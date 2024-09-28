@@ -3,7 +3,8 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 
 from .views import (login_view, signup_view,
-                    home_view, search_results, manual_change_view, input_results_view, pair_view, help_view)
+                    home_view, search_results, manual_change_view, input_results_view, pair_view, help_view,
+                    download_ratings)
 
 urlpatterns = [
     path('', login_view, name='login'),
@@ -16,6 +17,8 @@ urlpatterns = [
     path('input_results/', login_required(input_results_view), name='input_results'),
     path('pair/', login_required(pair_view), name='pair'),
     path('help/', login_required(help_view), name='help'),
+
+    path('download_ratings/', login_required(download_ratings), name='download_ratings'),
 
     path('password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
     path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
