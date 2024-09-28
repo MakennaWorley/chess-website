@@ -11,6 +11,7 @@
                         <th>Name</th>
                         <th>Rating</th>
                         <th>Grade</th>
+                        <th>Coach(s)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -19,6 +20,7 @@
                             <td>{{ player.name }}</td>
                             <td>{{ player.rating }}</td>
                             <td>{{ player.grade }}</td>
+                            <td>{{ player.lesson_class.get_teachers }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -30,15 +32,13 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Teacher(s)</th>
+                        <th>Coach(es)</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for class in class_list %}
                         <tr>
-                            <td>{{ class.level }}</td>
-                            <td>{{ class.get_teachers }}</td>
+                            <td>{{ class.name }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -50,19 +50,15 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Board</th>
-                        <th>White Player</th>
-                        <th>Black Player</th>
-                        <th>Result</th>
+                        <th>Date of Match</th>
+                        <th>Number of Games</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for game in games %}
                         <tr>
-                            <td>{{ game.get_board }}</td>
-                            <td>{{ game.white }}</td>
-                            <td>{{ game.black }}</td>
-                            <td>{{ game.result }}</td>
+                            <td>{{ week_data.week|date:"F d, Y" }}</td>
+                            <td>{{ week_data.game_count }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

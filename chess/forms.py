@@ -1,10 +1,12 @@
+from random import choices
+
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 
-from .models import RegisteredUser #, Club
+from .models import RegisteredUser, Game  # , Club
 
 
 class LoginForm(AuthenticationForm):
@@ -61,6 +63,12 @@ class SignUpForm(forms.ModelForm):
         return user
 
 
+SEARCH_CHOICES = [
+    ('Player', 'Player'),
+    ('Board', 'Board'),
+    ('Class', 'Class')
+]
+
 MODEL_CHOICES = [
     ('Player', 'Player'),
     ('LessonClass', 'LessonClass'),
@@ -69,14 +77,16 @@ MODEL_CHOICES = [
 ]
 
 class SearchForm(forms.Form):
+    search_board = forms.ChoiceField(
+        choices=SEARCH_CHOICES,
+        widget=forms.RadioSelect(),
+        initial='Player',
+        required=True,
+        label='Searching for:')
     query = forms.CharField(
-        label='Please enter a player name',
+        label='Keyword:',
         max_length=100,
         required=True,
-        widget=forms.TextInput(attrs={
-            'placeholder': 'Enter search term',
-            'class': 'form-control'
-        })
     )
     models = forms.MultipleChoiceField(
         choices=MODEL_CHOICES,

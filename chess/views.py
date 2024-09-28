@@ -1,17 +1,18 @@
-from django.shortcuts import render, redirect
+from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.contrib.auth.models import User
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.db.models import Q
-from django.core.validators import RegexValidator
-
+from django.db.models import Count, Q
+from django.db.models.functions import TruncWeek
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, redirect
 from .forms import SignUpForm, SearchForm
 from .models import RegisteredUser, Player, LessonClass, Game #, Club
 
 
 def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -20,15 +21,18 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                messages.info(request, f"You are now logged in as {username}.")
-                return redirect('home')
+                next_url = request.GET.get('next')
+                if next_url:
+                    return HttpResponseRedirect(next_url)
+                else:
+                    return redirect('home')
             else:
                 messages.error(request, "Invalid username or password.")
         else:
             messages.error(request, "Invalid username or password.")
     else:
         form = AuthenticationForm()
-    return render(request, 'chess/login.html', {'form': form, 'title': 'Login'})
+    return render(request, 'chess/login.html', {'form': form})
 
 
 def signup_view(request):
@@ -42,7 +46,7 @@ def signup_view(request):
     else:
         form = SignUpForm()
 
-    return render(request, 'chess/signup.html', {'form': form, 'title': 'Sign Up'})
+    return render(request, 'chess/signup.html', {'form': form})
 
 
 def home_view(request):
@@ -53,9 +57,16 @@ def home_view(request):
         else:
             club_name = None  # or some default value if the user is not associated with any club'''
 
-        players = Player.objects.all()
-        class_list = LessonClass.objects.all()
-        games = Game.objects.all()
+        players = Player.objects.filter(is_active=True, is_volunteer=False).order_by('-rating')[:10]
+        class_list = LessonClass.objects.filter(is_active=True)
+        games = (
+            Game.objects
+            .filter(is_active=True)  # Only active games
+            .annotate(week=TruncWeek('date_of_match'))  # Group by week
+            .values('week')  # Select the week
+            .annotate(game_count=Count('id'))  # Count the number of games per week
+            .order_by('-week')  # Order by week in descending order
+        )
 
         return render(request, 'chess/home.html', {
             'username': request.user.username,
@@ -65,7 +76,7 @@ def home_view(request):
             'games': games,
         })
     else:
-        return redirect('login', {'title': 'Login'})
+        return redirect('login/', {'title': 'Login'})
 
 
 def register(request):
@@ -79,11 +90,6 @@ def register(request):
         form = UserCreationForm()
     return render(request, 'chess/signup.html', {'form': form})
 
-@login_required
-def profile(request):
-    registered_user = RegisteredUser.objects.get(user=request.user)
-    return render(request, 'chess/home.html', {'registered_user': registered_user})
-
 
 def search_results(request):
     form = SearchForm(request.GET or None)
@@ -91,27 +97,63 @@ def search_results(request):
 
     if form.is_valid():
         query = form.cleaned_data['query']
+        search_type = form.cleaned_data['search_board']
         selected_models = form.cleaned_data['models']
 
         #searching a board
+        if search_type == 'Board':
+            letter = ''
+            number = -1
 
-        #searching a player
-        if 'Player' in selected_models or 'All' in selected_models:
-            player_results = Player.objects.filter(name__icontains=query)
-            results.extend(player_results)
+            if len(query) >= 2 and query[0].isalpha() and query[1:].isdigit():
+                letter = query[0]
+                number = int(query[1:])
+            elif len(query) >= 2 and query[-1].isalpha() and query[:-1].isdigit():
+                letter = query[-1]
+                number = int(query[:-1])
+            else:
+                return render(request, 'chess/search.html', {
+                    'form': form,
+                    'results': ["Unable to find board " + query],
+                })
 
-        if 'LessonClass' in selected_models or 'All' in selected_models:
-            lesson_results = LessonClass.objects.filter(
-                Q(teacher__name__icontains=query) | Q(co_teacher__name__icontains=query)
-            )
-            results.extend(lesson_results)
-
-        if 'Game' in selected_models or 'All' in selected_models:
             game_results = Game.objects.filter(
-                Q(white__name__icontains=query) |
-                Q(black__name__icontains=query)
+                Q(board_letter=letter) & Q(board_number=number)
             )
             results.extend(game_results)
+
+        #searching a player
+        elif search_type == 'Player':
+            if 'Player' in selected_models or 'All' in selected_models:
+                player_results = Player.objects.filter(
+                    Q(first_name__icontains=query) | Q(last_name__icontains=query)
+                )
+                results.extend(player_results)
+
+            if 'LessonClass' in selected_models or 'All' in selected_models:
+                lesson_results = LessonClass.objects.filter(
+                    Q(teacher__first_name__icontains=query) |
+                    Q(teacher__last_name__icontains=query) |
+                    Q(co_teacher__first_name__icontains=query) |
+                    Q(co_teacher__last_name__icontains=query)
+                )
+                results.extend(lesson_results)
+
+            if 'Game' in selected_models or 'All' in selected_models:
+                game_results = Game.objects.filter(
+                    Q(white__first_name__icontains=query) |
+                    Q(white__last_name__icontains=query) |
+                    Q(black__first_name__icontains=query) |
+                    Q(black__last_name__icontains=query)
+                )
+                results.extend(game_results)
+
+        else:
+            players = Player.objects.filter(
+                Q(lesson_class__teacher__first_name__icontains=query) |
+                Q(lesson_class__co_teacher__first_name__icontains=query)
+            )
+            results.extend(players)
 
     if not results:
         return render(request, 'chess/search.html', {

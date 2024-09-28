@@ -19,27 +19,42 @@ from django.contrib.auth import authenticate
 
 
 class Player(models.Model):
-    name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=100)
     rating = models.IntegerField()
+    beginning_rating = models.IntegerField(blank=True, null=True)
+    grade = models.IntegerField(blank=True, null=True)
+    lesson_class = models.ForeignKey('LessonClass', on_delete=models.RESTRICT, related_name='player_class', blank=True, null=True)
+    active_member = models.BooleanField(default=True)
+    is_volunteer = models.BooleanField(default=False)
+
+    parent_or_guardian = models.CharField(max_length=100, blank=True, null=True)
+    email = models.EmailField(max_length=200, blank=True, null=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    additional_info = models.TextField(blank=True, null=True)
+
     opponent_one = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='last_time_opponent', null=True, blank=True)
     opponent_two = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='two_times_ago_opponent', null=True, blank=True)
     opponent_three = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='three_times_ago_opponent', null=True, blank=True)
-    grade = models.IntegerField(default=None, blank=True, null=True)
     #club = models.ForeignKey(Club, on_delete=models.RESTRICT)
-    parent_name = models.CharField(max_length=100, blank=True, null=True)
-    parent_email = models.EmailField(max_length=200, blank=True, null=True)
 
-    modified_by = models.ForeignKey(User, on_delete=models.RESTRICT)
+    modified_by = models.ForeignKey(User, default="import", on_delete=models.RESTRICT)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     end_at = models.DateTimeField(default=None, blank=True, null=True)
 
     def __str__(self):
-        return self.name
+        if self.lesson_class:
+            return self.name() + " | "+ str(self.rating) + " | " + self.lesson_class.name
+        else:
+            return self.name() + " | "+ str(self.rating) + " | No class assigned"
+
+    def name(self):
+        return self.last_name + ", " + self.first_name
 
 
-class LessonClass(models.Model):  # Renamed from Class to SchoolClass
-    level = models.CharField(max_length=100)
+class LessonClass(models.Model):
+    name = models.CharField(max_length=100)
     teacher = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='teacher')
     co_teacher = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='co_teacher', blank=True, null=True)
     #club = models.ForeignKey(Club, on_delete=models.RESTRICT)
@@ -50,16 +65,7 @@ class LessonClass(models.Model):  # Renamed from Class to SchoolClass
     end_at = models.DateTimeField(default=None, blank=True, null=True)
 
     def __str__(self):
-        if self.co_teacher:
-            return self.level + ": " + self.teacher.name + " and " + self.co_teacher.name
-        else:
-            return self.level + " " + self.teacher.name
-
-    def get_teachers(self):
-        if self.co_teacher:
-            return self.teacher.name + " and " + self.co_teacher.name
-        else:
-            return self.teacher.name
+        return self.name
 
 
 class RegisteredUser(models.Model):
@@ -101,7 +107,7 @@ class Game(models.Model):
     end_at = models.DateTimeField(default=None, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.board_letter}{self.board_number}: White- {self.white.name}, Black- {self.black.name}"
+        return f"{self.board_letter}{self.board_number} | White- {self.white.last_name + ", " + self.white.first_name} | Black- {self.black.last_name + ", " + self.black.first_name}"
 
     def get_board(self):
-        return "" + self.board_letter + self.board_number.__str__() + ""
+        return "" + self.board_letter + str(self.board_number) + ""

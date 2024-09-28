@@ -15,14 +15,19 @@
             <ul>
                 <li><a href="{% url 'home' %}">Home</a></li>
                 <li><a href="{% url 'search' %}">Search</a></li>
-                <li><a href="manual-add.html">Manual Add</a></li>
-                <li><a href="manual-edit.html">Manual Edit</a></li>
-                <li><a href="manual-delete.html">Manual Delete</a></li>
-                <li><a href="import-players.html">Import Players</a></li>
-                <li><a href="import-results.html">Import Results</a></li>
+                <li><a href="manual.html">Manual Change</a></li>
+                <!--<li><a href="import-players.html">Import Players</a></li>-->
+                <li><a href="import-results.html">Input Results</a></li>
                 <li><a href="pair.html">Pair</a></li>
                 <li><a href="help.html">Help</a></li>
-                <li><a href="{% url 'logout' %}">Log Out</a></li>
+                <li>
+                    <form method="post" action="{% url 'logout' %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-button">
+                            Log Out
+                        </button>
+                    </form>
+                </li>
             </ul>
         </nav>
     {% else %}
