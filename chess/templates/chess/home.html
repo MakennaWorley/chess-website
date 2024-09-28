@@ -32,13 +32,13 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Teacher(s)</th>
+                        <th>Coach(es)</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for class in class_list %}
                         <tr>
-                            <td>{{ class.get_teachers }}</td>
+                            <td>{{ class.name }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

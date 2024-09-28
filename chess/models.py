@@ -45,7 +45,7 @@ class Player(models.Model):
 
     def __str__(self):
         if self.lesson_class:
-            return self.name() + " | "+ str(self.rating) + " | " + self.lesson_class.get_teachers()
+            return self.name() + " | "+ str(self.rating) + " | " + self.lesson_class.name
         else:
             return self.name() + " | "+ str(self.rating) + " | No class assigned"
 
@@ -65,13 +65,7 @@ class LessonClass(models.Model):
     end_at = models.DateTimeField(default=None, blank=True, null=True)
 
     def __str__(self):
-        return self.get_teachers()
-
-    def get_teachers(self):
-        if self.co_teacher:
-            return self.teacher.first_name + " & " + self.co_teacher.first_name
-        else:
-            return self.teacher.first_name
+        return self.name
 
 
 class RegisteredUser(models.Model):
