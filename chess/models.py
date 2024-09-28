@@ -88,11 +88,10 @@ class Game(models.Model):
         DRAW = 'D', 'Draw'
         UNKNOWN = 'U', 'Unknown'
 
-    week_number = models.IntegerField(blank=True, null=True)
     date_of_match = models.DateField()
     #club = models.ForeignKey(Club, on_delete=models.RESTRICT)
-    white = models.ForeignKey(Player, on_delete=models.RESTRICT, related_name='games_as_white')
-    black = models.ForeignKey(Player, on_delete=models.RESTRICT, related_name='games_as_black')
+    white = models.ForeignKey(Player, on_delete=models.RESTRICT, related_name='game_as_white', blank=True, null=True)
+    black = models.ForeignKey(Player, on_delete=models.RESTRICT, related_name='game_as_black', blank=True, null=True)
     board_letter = models.CharField(max_length=1)
     board_number = models.IntegerField()
     result = models.CharField(
@@ -107,7 +106,9 @@ class Game(models.Model):
     end_at = models.DateTimeField(default=None, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.board_letter}{self.board_number} | White- {self.white.last_name + ", " + self.white.first_name} | Black- {self.black.last_name + ", " + self.black.first_name}"
+        white_player = f"{self.white.last_name}, {self.white.first_name}" if self.white else "No White Player"
+        black_player = f"{self.black.last_name}, {self.black.first_name}" if self.black else "No Black Player"
+        return f"{self.board_letter}{self.board_number} | White- {white_player} | Black- {black_player}"
 
     def get_board(self):
         return "" + self.board_letter + str(self.board_number) + ""
