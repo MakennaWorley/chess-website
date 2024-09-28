@@ -120,11 +120,13 @@ def search_results(request):
             letter = ''
             number = -1
 
+            #print(query)
+
             if len(query) >= 2 and query[0].isalpha() and query[1:].isdigit():
-                letter = query[0]
+                letter = query[0].upper()
                 number = int(query[1:])
             elif len(query) >= 2 and query[-1].isalpha() and query[:-1].isdigit():
-                letter = query[-1]
+                letter = query[-1].upper()
                 number = int(query[:-1])
             else:
                 return render(request, 'chess/search.html', {
@@ -141,14 +143,14 @@ def search_results(request):
         elif search_type == 'Player':
             player_results = Player.objects.filter(
                 Q(first_name__icontains=query) & Q(is_active=True) | Q(last_name__icontains=query) & Q(is_active=True)
-            )
+            ).order_by('-rating', '-grade', 'last_name', 'first_name')
             results.extend(player_results)
 
         else:
             players = Player.objects.filter(
                 Q(lesson_class__teacher__first_name__icontains=query) & Q(is_active=True) |
                 Q(lesson_class__co_teacher__first_name__icontains=query) & Q(is_active=True)
-            )
+            ).order_by('-rating', '-grade', 'last_name', 'first_name')
             results.extend(players)
 
     if not results:

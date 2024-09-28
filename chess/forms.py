@@ -69,13 +69,6 @@ SEARCH_CHOICES = [
     ('Class', 'Class')
 ]
 
-MODEL_CHOICES = [
-    ('Player', 'Player'),
-    ('LessonClass', 'LessonClass'),
-    ('Game', 'Game'),
-    ('All', 'All Models'),
-]
-
 class SearchForm(forms.Form):
     search_board = forms.ChoiceField(
         choices=SEARCH_CHOICES,
