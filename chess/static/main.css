@@ -1,5 +1,6 @@
 * {
     font-size: 20px;
+    font-family: "Times New Roman";
 }
 
 html {
@@ -136,6 +137,7 @@ p {
         height: 100%;
         width: 100%;
         box-sizing: border-box;
+        font-weight: inherit;
     }
 
     nav ul li button:hover {

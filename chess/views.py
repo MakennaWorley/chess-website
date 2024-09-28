@@ -1,18 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
-from django.contrib.auth import views as auth_views
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.db.models import Q
+from django.db.models import Count, Q
+from django.db.models.functions import TruncWeek
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
-from django.urls import path
 from .forms import SignUpForm, SearchForm
 from .models import RegisteredUser, Player, LessonClass, Game #, Club
-#from .decorators import redirect_if_authenticated
 
 
-#@redirect_if_authenticated
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
@@ -39,7 +35,6 @@ def login_view(request):
     return render(request, 'chess/login.html', {'form': form})
 
 
-#@redirect_if_authenticated
 def signup_view(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
@@ -62,9 +57,16 @@ def home_view(request):
         else:
             club_name = None  # or some default value if the user is not associated with any club'''
 
-        players = Player.objects.all()
-        class_list = LessonClass.objects.all()
-        games = Game.objects.all()
+        players = Player.objects.filter(is_active=True).order_by('-rating')[:10]
+        class_list = LessonClass.objects.filter(is_active=True)
+        games = (
+            Game.objects
+            .filter(is_active=True)  # Only active games
+            .annotate(week=TruncWeek('date_of_match'))  # Group by week
+            .values('week')  # Select the week
+            .annotate(game_count=Count('id'))  # Count the number of games per week
+            .order_by('-week')  # Order by week in descending order
+        )
 
         return render(request, 'chess/home.html', {
             'username': request.user.username,

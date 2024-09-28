@@ -50,19 +50,15 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Board</th>
-                        <th>White Player</th>
-                        <th>Black Player</th>
-                        <th>Result</th>
+                        <th>Date of Match</th>
+                        <th>Number of Games</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for game in games %}
                         <tr>
-                            <td>{{ game.get_board }}</td>
-                            <td>{{ game.white.name }}</td>
-                            <td>{{ game.black.name }}</td>
-                            <td>{{ game.result }}</td>
+                            <td>{{ week_data.week|date:"F d, Y" }}</td>
+                            <td>{{ week_data.game_count }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

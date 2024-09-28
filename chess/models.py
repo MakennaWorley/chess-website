@@ -21,23 +21,24 @@ from django.contrib.auth import authenticate
 class Player(models.Model):
     last_name = models.CharField(max_length=100)
     first_name = models.CharField(max_length=100)
-    rating = models.IntegerField(default=100)
-    grade = models.IntegerField(default=None, blank=True, null=True)
+    rating = models.IntegerField()
+    beginning_rating = models.IntegerField(blank=True, null=True)
+    grade = models.IntegerField(blank=True, null=True)
     lesson_class = models.ForeignKey('LessonClass', on_delete=models.RESTRICT, related_name='player_class', blank=True, null=True)
-    beginning_rating = models.IntegerField(default=100, blank=True, null=True)
-    rating_change = models.IntegerField(default=None, blank=True, null=True)
     active_member = models.BooleanField(default=True)
+    is_volunteer = models.BooleanField(default=False)
+
+    parent_or_guardian = models.CharField(max_length=100, blank=True, null=True)
+    email = models.EmailField(max_length=200, blank=True, null=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    additional_info = models.TextField(blank=True, null=True)
 
     opponent_one = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='last_time_opponent', null=True, blank=True)
     opponent_two = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='two_times_ago_opponent', null=True, blank=True)
     opponent_three = models.ForeignKey('self', on_delete=models.RESTRICT, related_name='three_times_ago_opponent', null=True, blank=True)
     #club = models.ForeignKey(Club, on_delete=models.RESTRICT)
-    parent_or_guardian_name = models.CharField(max_length=100, blank=True, null=True)
-    email = models.EmailField(max_length=200, blank=True, null=True)
-    phone = models.CharField(max_length=15, blank=True, null=True)
-    additional_info = models.TextField(blank=True, null=True)
 
-    modified_by = models.ForeignKey(User, on_delete=models.RESTRICT)
+    modified_by = models.ForeignKey(User, default="import", on_delete=models.RESTRICT)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     end_at = models.DateTimeField(default=None, blank=True, null=True)
@@ -53,6 +54,7 @@ class Player(models.Model):
 
 
 class LessonClass(models.Model):
+    name = models.CharField(max_length=100)
     teacher = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='teacher')
     co_teacher = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='co_teacher', blank=True, null=True)
     #club = models.ForeignKey(Club, on_delete=models.RESTRICT)
