@@ -15,10 +15,10 @@
             <ul>
                 <li><a href="{% url 'home' %}">Home</a></li>
                 <li><a href="{% url 'search' %}">Search</a></li>
-                <li><a href="manual.html">Manual Change</a></li>
+                <li><a href="{% url 'manual_change' %}">Manual Change</a></li>
                 <!--<li><a href="import-players.html">Import Players</a></li>-->
-                <li><a href="import-results.html">Input Results</a></li>
-                <li><a href="pair.html">Pair</a></li>
+                <li><a href="{% url 'input_results' %}">Input Results</a></li>
+                <li><a href="{% url 'pair' %}">Pair</a></li>
                 <li><a href="{% url 'help' %}">Help</a></li>
                 <li>
                     <form method="post" action="{% url 'logout' %}" style="display:inline;">

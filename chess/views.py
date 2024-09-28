@@ -83,6 +83,16 @@ def help_view(request):
     return render(request, 'chess/help.html', )
 
 
+def manual_change_view(request):
+    return render(request, 'chess/manual_change.html', )
+
+def input_results_view(request):
+    return render(request, 'chess/input_results.html', )
+
+def pair_view(request):
+    return render(request, 'chess/pair.html', )
+
+
 def register(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
