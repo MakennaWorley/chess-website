@@ -1,11 +1,13 @@
 {%  extends 'chess/base.html' %}
 
 {% block content %}
-    <h1>Login Form</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Login</button>
-    </form>
-    <p>Don't have an account? <a href="{% url 'signup' %}">Create one here</a></p>
+    <div class="center">
+    <h1>Log in to access the Chess App</h1>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Login</button>
+        </form>
+        <p>Don't have an account? <a href="{% url 'signup' %}">Create one here</a></p>
+    </div>
 {% endblock %}
