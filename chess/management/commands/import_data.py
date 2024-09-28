@@ -23,7 +23,6 @@ class Command(BaseCommand):
         self.player_import(players_csv)
 
     def volunteer_import(self, csv_file_path):
-        pass
         self.stdout.write('Starting volunteer import...')
         with open(csv_file_path, newline='', encoding='utf-8-sig') as csvfile:
             reader = csv.DictReader(csvfile, delimiter=',')
@@ -46,7 +45,7 @@ class Command(BaseCommand):
                         'email': row.get('email'),
                         'phone': row.get('phone'),
 
-                        'modified_by': User.objects.get(username='root'),
+                        'modified_by': User.objects.get(username='m'),
                         'is_active': True,
                     }
                 )
@@ -83,7 +82,7 @@ class Command(BaseCommand):
                         teacher=teacher,
                         co_teacher=co_teacher,
                         defaults={
-                            'modified_by': User.objects.get(username='root'),
+                            'modified_by': User.objects.get(username='m'),
                             'is_active': True,
                         }
                     )
@@ -108,8 +107,9 @@ class Command(BaseCommand):
 
             for row in reader:
                 if row.get('lesson_class'):
+                    print(row['lesson_class'])
                     try:
-                        lesson_class = LessonClass.objects.get(teacher__first_name=row['lesson_class'])
+                        lesson_class = LessonClass.objects.get(name=row.get('lesson_class'))
                     except LessonClass.DoesNotExist:
                         self.stdout.write(
                             f"LessonClass with identifier {row['lesson_class']} not found, skipping player {row['first_name']} {row['last_name']}.")
@@ -126,12 +126,12 @@ class Command(BaseCommand):
                         'active_member': row.get('active_member', 'True').lower() == 'true',
                         'is_volunteer': row.get('is_volunteer', 'False').lower() == 'true',
 
-                        'parent_or_guardian_name': row.get('parent_or_guardian_name'),
+                        'parent_or_guardian': row.get('parent_or_guardian'),
                         'email': row.get('email'),
                         'phone': row.get('phone'),
                         'additional_info': row.get('additional_info'),
 
-                        'modified_by': User.objects.get(username='root'),
+                        'modified_by': User.objects.get(username='m'),
                         'is_active': True,
                     }
                 )

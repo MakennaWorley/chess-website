@@ -57,7 +57,7 @@ def home_view(request):
         else:
             club_name = None  # or some default value if the user is not associated with any club'''
 
-        players = Player.objects.filter(is_active=True).order_by('-rating')[:10]
+        players = Player.objects.filter(is_active=True, is_volunteer=False).order_by('-rating')[:10]
         class_list = LessonClass.objects.filter(is_active=True)
         games = (
             Game.objects
