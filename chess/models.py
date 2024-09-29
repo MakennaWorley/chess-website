@@ -1,5 +1,3 @@
-from datetime import timezone
-
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
@@ -47,10 +45,30 @@ class Player(models.Model):
         if self.lesson_class:
             return self.name() + " | "+ str(self.rating) + " | " + self.lesson_class.name
         else:
-            return self.name() + " | "+ str(self.rating) + " | No class assigned"
+            return self.name() + " | "+ str(self.rating)
 
     def name(self):
         return self.last_name + ", " + self.first_name
+
+    def improved_rating(self):
+        return self.beginning_rating - self.rating
+
+    def search_view(self):
+        lesson_class = self.lesson_class
+        parent_or_guardian = self.parent_or_guardian
+        email = self.email
+        phone = self.phone
+
+        if not lesson_class:
+            lesson_class = "No class assigned"
+        if not parent_or_guardian:
+            parent_or_guardian = "No parent or guardian found"
+        if not email:
+            email = "No email found"
+        if not phone:
+            phone = "No phone found"
+
+        return self.name() + " | " + str(self.rating) + " | " + str(self.grade) + " | " + lesson_class + " | " + parent_or_guardian +" | " + email + " | " + phone
 
 
 class LessonClass(models.Model):
@@ -108,7 +126,12 @@ class Game(models.Model):
     def __str__(self):
         white_player = f"{self.white.last_name}, {self.white.first_name}" if self.white else "No White Player"
         black_player = f"{self.black.last_name}, {self.black.first_name}" if self.black else "No Black Player"
-        return f"{self.board_letter}{self.board_number} | White- {white_player} | Black- {black_player}"
+        return f"{self.board_letter}{self.board_number} | {self.date_of_match} | White- {white_player} | Black- {black_player}"
 
     def get_board(self):
         return "" + self.board_letter + str(self.board_number) + ""
+
+    def get_players(self):
+        white_player = f"{self.white.last_name}, {self.white.first_name}" if self.white else "No White Player"
+        black_player = f"{self.black.last_name}, {self.black.first_name}" if self.black else "No Black Player"
+        return f"White- {white_player} | Black- {black_player}"

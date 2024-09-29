@@ -3,8 +3,6 @@ from random import choices
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import IntegrityError
 
 from .models import RegisteredUser, Game  # , Club
 
