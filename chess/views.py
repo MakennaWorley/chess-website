@@ -15,7 +15,8 @@ from .write_to_file import write_ratings, write_pairings
 
 
 GAME_SORT_ORDER = ['G', 'H', 'I', 'J']
-CREATED_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'ratings')
+CREATED_RATING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'ratings')
+CREATED_PAIRING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'pairings')
 
 
 def login_view(request):
@@ -90,8 +91,6 @@ def update_games(request):
         data = json.loads(request.body)
         game_date = data.get('game_date')
 
-        print(game_date)
-
         #games = Game.objects.filter(date_of_match=game_date) if game_type == 'by_date' else Game.objects.all()
 
         if game_date:
@@ -141,7 +140,7 @@ def input_results_view(request):
 def download_existing_ratings_sheet(request):
     file_name = request.GET.get('file')
     if file_name:
-        file_path = os.path.join(CREATED_FILES_DIR, file_name)
+        file_path = os.path.join(CREATED_RATING_FILES_DIR, file_name)
         if os.path.exists(file_path):
             with open(file_path, 'rb') as f:
                 response = HttpResponse(f.read(), content_type='application/octet-stream')
@@ -172,12 +171,21 @@ def download_pairings(request):
         if form.is_valid():
             date_of_match = form.cleaned_data['date']
 
-            file_path = write_pairings(date_of_match)
+            file_name = f'Pairings_{date_of_match}.xlsx'
+            file_path = os.path.join(CREATED_PAIRING_FILES_DIR, file_name)
 
-            with open(file_path, 'rb') as f:
-                response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-                response['Content-Disposition'] = f'attachment; filename=Pairings_{date_of_match}.xlsx'
-                return response
+            if file_name in os.listdir(CREATED_PAIRING_FILES_DIR):
+                with open(file_path, 'rb') as f:
+                    response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    response['Content-Disposition'] = f'attachment; filename={file_name}'
+                    return response
+            else:
+                file_path = write_pairings(date_of_match)
+
+                with open(file_path, 'rb') as f:
+                    response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    response['Content-Disposition'] = f'attachment; filename=Pairings_{date_of_match}.xlsx'
+                    return response
     else:
         form = PairingDateForm()
 

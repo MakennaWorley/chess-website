@@ -1,4 +1,6 @@
 from openpyxl import load_workbook
+from openpyxl.styles.fonts import Font
+
 from .models import Player, Game
 import os
 from django.conf import settings
@@ -34,20 +36,38 @@ def write_pairings(submitted_date):
     workbook = load_workbook(file_path)
     sheet = workbook.active
 
+    # Define bold font
+    bold_font = Font(bold=True)
+
     games = Game.objects.filter(date_of_match=submitted_date, is_active=True)
 
-    start_row = 2
-
-    for index, game in enumerate(games, start=start_row):
+    for game in games:
         white_player = game.white.name() if game.white else "No White Player"
         black_player = game.black.name() if game.black else "No Black Player"
         board = game.get_board()
 
-        sheet[f'A{index}'] = board
-        sheet[f'B{index}'] = white_player
-        sheet[f'D{index}'] = black_player
+        matching_row = None
+        for row_index, row in enumerate(sheet.iter_rows(min_row=2, max_col=1, values_only=True), start=2):
+            if row[0] == board:
+                matching_row = row_index
+                break
 
-    # Create filename with the provided date
+        if matching_row:
+            white_cell = sheet[f'B{matching_row}']
+            white_cell.value = white_player
+
+            if game.white and game.white.is_volunteer:
+                white_cell.font = bold_font
+
+            black_cell = sheet[f'D{matching_row}']
+            black_cell.value = black_player
+
+            if game.black and game.black.is_volunteer:
+                black_cell.font = bold_font
+
+        else:
+            print(f"No matching board found for game: {game}")
+
     date_str = submitted_date.strftime('%Y-%m-%d')
     new_file_path = os.path.join(settings.BASE_DIR, 'files', 'pairings', f'Pairings_{date_str}.xlsx')
     os.makedirs(os.path.dirname(new_file_path), exist_ok=True)

@@ -62,7 +62,12 @@ class SignUpForm(forms.ModelForm):
 
 
 class PairingDateForm(forms.Form):
-    date = forms.DateField(widget=forms.TextInput(attrs={'placeholder': 'YYYY-MM-DD'}))
+    date = forms.ChoiceField(choices=[], widget=forms.Select())
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        game_dates = Game.objects.values_list('date_of_match', flat=True).distinct()
+        self.fields['date'].choices = [(date, date) for date in game_dates]
 
 
 SEARCH_CHOICES = [
