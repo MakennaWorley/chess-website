@@ -27,3 +27,30 @@ def write_ratings():
     workbook.save(new_file_path)
 
     return new_file_path
+
+
+def write_pairings(submitted_date):
+    file_path = os.path.join(settings.BASE_DIR, 'files', 'PairingTemplate.xlsx')
+    workbook = load_workbook(file_path)
+    sheet = workbook.active
+
+    games = Game.objects.filter(date_of_match=submitted_date, is_active=True)
+
+    start_row = 2
+
+    for index, game in enumerate(games, start=start_row):
+        white_player = game.white.name() if game.white else "No White Player"
+        black_player = game.black.name() if game.black else "No Black Player"
+        board = game.get_board()
+
+        sheet[f'A{index}'] = board
+        sheet[f'B{index}'] = white_player
+        sheet[f'D{index}'] = black_player
+
+    # Create filename with the provided date
+    date_str = submitted_date.strftime('%Y-%m-%d')
+    new_file_path = os.path.join(settings.BASE_DIR, 'files', 'pairings', f'Pairings_{date_str}.xlsx')
+    os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
+    workbook.save(new_file_path)
+
+    return new_file_path

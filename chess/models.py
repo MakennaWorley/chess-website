@@ -129,7 +129,7 @@ class Game(models.Model):
         return f"{self.board_letter}{self.board_number} | {self.date_of_match} | White- {white_player} | Black- {black_player}"
 
     def get_board(self):
-        return "" + self.board_letter + str(self.board_number) + ""
+        return "" + self.board_letter + "-" + str(self.board_number) + ""
 
     def get_players(self):
         white_player = f"{self.white.last_name}, {self.white.first_name}" if self.white else "No White Player"

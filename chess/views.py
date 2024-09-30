@@ -9,9 +9,9 @@ from django.db.models import Q, Count
 from django.http import HttpResponseRedirect, HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect
 
-from .forms import SignUpForm, SearchForm
+from .forms import SignUpForm, SearchForm, PairingDateForm
 from .models import RegisteredUser, Player, LessonClass, Game #, Club
-from .write_to_file import write_ratings
+from .write_to_file import write_ratings, write_pairings
 
 
 GAME_SORT_ORDER = ['G', 'H', 'I', 'J']
@@ -114,15 +114,80 @@ def update_games(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-def help_view(request):
-    return render(request, 'chess/help.html', )
-
-
 def manual_change_view(request):
     return render(request, 'chess/manual_change.html', )
 
+
+def input_results_view(request):
+    ratings_dir = os.path.join(settings.BASE_DIR, 'files', 'ratings')
+    try:
+        existing_files = os.listdir(ratings_dir)
+    except FileNotFoundError:
+        existing_files = []
+
+    if ".DS_Store" in existing_files:
+        existing_files.remove(".DS_Store")
+
+    existing_files = sorted(
+        existing_files,
+        key=lambda f: os.path.getmtime(os.path.join(ratings_dir, f)),
+        reverse=True
+    )
+
+    context = {'existing_files': existing_files}
+    return render(request, 'chess/input_results.html', context)
+
+
+def download_existing_ratings_sheet(request):
+    file_name = request.GET.get('file')
+    if file_name:
+        file_path = os.path.join(CREATED_FILES_DIR, file_name)
+        if os.path.exists(file_path):
+            with open(file_path, 'rb') as f:
+                response = HttpResponse(f.read(), content_type='application/octet-stream')
+                response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+                return response
+        else:
+            raise Http404("File does not exist")
+    return redirect('input_results')
+
+
+def download_ratings(request):
+    file_path = write_ratings()
+
+    with open(file_path, 'rb') as excel_file:
+        response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+        return response
+
+
 def pair_view(request):
-    return render(request, 'chess/pair.html', )
+    form = PairingDateForm()  # Create an instance of the form
+    return render(request, 'chess/pair.html', {'form': form})
+
+
+def download_pairings(request):
+    if request.method == 'POST':
+        form = PairingDateForm(request.POST)
+        if form.is_valid():
+            date_of_match = form.cleaned_data['date']
+
+            file_path = write_pairings(date_of_match)
+
+            with open(file_path, 'rb') as f:
+                response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                response['Content-Disposition'] = f'attachment; filename=Pairings_{date_of_match}.xlsx'
+                return response
+    else:
+        form = PairingDateForm()
+
+    return render(request, 'chess/pair.html', {'form': form})
+
+
+def help_view(request):
+    return render(request, 'chess/help.html', )
+
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 def search_results(request):
@@ -177,40 +242,3 @@ def search_results(request):
         'results': results
     }
     return render(request, 'chess/search.html', context)
-
-
-def input_results(request):
-    ratings_dir = os.path.join(settings.BASE_DIR, 'files', 'ratings')
-    try:
-        existing_files = os.listdir(ratings_dir)
-    except FileNotFoundError:
-        existing_files = []
-
-    if ".DS_Store" in existing_files:
-        existing_files.remove(".DS_Store")
-
-    context = {'existing_files': existing_files}
-    return render(request, 'chess/input_results.html', context)
-
-
-def download_existing_ratings_sheet(request):
-    file_name = request.GET.get('file')
-    if file_name:
-        file_path = os.path.join(CREATED_FILES_DIR, file_name)
-        if os.path.exists(file_path):
-            with open(file_path, 'rb') as f:
-                response = HttpResponse(f.read(), content_type='application/octet-stream')
-                response['Content-Disposition'] = f'attachment; filename="{file_name}"'
-                return response
-        else:
-            raise Http404("File does not exist")
-    return redirect('input_results')
-
-
-def download_ratings(request):
-    file_path = write_ratings()
-
-    with open(file_path, 'rb') as excel_file:
-        response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = f'attachment; filename="ratings.xlsx"'
-        return response

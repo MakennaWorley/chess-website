@@ -61,6 +61,10 @@ class SignUpForm(forms.ModelForm):
         return user
 
 
+class PairingDateForm(forms.Form):
+    date = forms.DateField(widget=forms.TextInput(attrs={'placeholder': 'YYYY-MM-DD'}))
+
+
 SEARCH_CHOICES = [
     ('Player', 'Player'),
     ('Board', 'Board'),
