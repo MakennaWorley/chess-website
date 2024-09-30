@@ -1,8 +1,7 @@
 {%  extends 'chess/base.html' %}
 
 {% block content %}
-    <div>
-        <h1>Search</h1>
+    <div class="center">
         <form method="GET">
             {{ form.as_p }}
             <button type="submit" class="btn btn-primary">Search!</button>
@@ -12,7 +11,7 @@
             <h2>Search Results</h2>
             <ul>
                 {% for result in results %}
-                    <li>{{ result }}</li>
+                    <p>{{ result }}</p>
                 {% endfor %}
             </ul>
         {% endif %}

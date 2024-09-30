@@ -1,0 +1,12 @@
+{% extends 'chess/base.html' %}
+
+{% block content %}
+    <h1>Download Pairing Sheet</h1>
+    <form method="POST" action="{% url 'download_pairings' %}">
+        {% csrf_token %}
+        <label for="{{ form.date.id_for_label }}">Date of Match:</label>
+        {{ form.date }}
+        <br><br>
+        <button type="submit">Download Pairing Sheet</button>
+    </form>
+{% endblock %}

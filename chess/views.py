@@ -1,12 +1,22 @@
+import os
+import json
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.db.models import Count, Q
-from django.db.models.functions import TruncWeek
-from django.http import HttpResponseRedirect
+from django.db.models import Q, Count
+from django.http import HttpResponseRedirect, HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect
-from .forms import SignUpForm, SearchForm
+
+from .forms import SignUpForm, SearchForm, PairingDateForm
 from .models import RegisteredUser, Player, LessonClass, Game #, Club
+from .write_to_file import write_ratings, write_pairings
+
+
+GAME_SORT_ORDER = ['G', 'H', 'I', 'J']
+CREATED_RATING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'ratings')
+CREATED_PAIRING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'pairings')
 
 
 def login_view(request):
@@ -49,36 +59,6 @@ def signup_view(request):
     return render(request, 'chess/signup.html', {'form': form})
 
 
-def home_view(request):
-    if request.user.is_authenticated:
-        registered_user = RegisteredUser.objects.get(user=request.user)
-        '''if registered_user.club:
-            club_name = registered_user.club
-        else:
-            club_name = None  # or some default value if the user is not associated with any club'''
-
-        players = Player.objects.filter(is_active=True, is_volunteer=False).order_by('-rating')[:10]
-        class_list = LessonClass.objects.filter(is_active=True)
-        games = (
-            Game.objects
-            .filter(is_active=True)  # Only active games
-            .annotate(week=TruncWeek('date_of_match'))  # Group by week
-            .values('week')  # Select the week
-            .annotate(game_count=Count('id'))  # Count the number of games per week
-            .order_by('-week')  # Order by week in descending order
-        )
-
-        return render(request, 'chess/home.html', {
-            'username': request.user.username,
-            #'club_name': club_name,
-            'players': players,
-            'class_list': class_list,
-            'games': games,
-        })
-    else:
-        return redirect('login/', {'title': 'Login'})
-
-
 def register(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -91,6 +71,133 @@ def register(request):
     return render(request, 'chess/signup.html', {'form': form})
 
 
+def home_view(request):
+    games_by_date = Game.objects.filter(is_active=True).values('date_of_match').annotate(game_count=Count('id')).order_by('-date_of_match')
+
+    players = Player.objects.filter(active_member=True, is_active=True, is_volunteer=False).order_by('-rating')
+    class_list = LessonClass.objects.filter(is_active=True)
+
+    context = {
+        'players': players,
+        'class_list': class_list,
+        'games_by_date': games_by_date,
+    }
+
+    return render(request, 'chess/home.html', context)
+
+
+def update_games(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        game_date = data.get('game_date')
+
+        #games = Game.objects.filter(date_of_match=game_date) if game_type == 'by_date' else Game.objects.all()
+
+        if game_date:
+            games = Game.objects.filter(date_of_match=game_date)
+        else:
+            games = []
+
+        game_list = [
+            {
+                'board': game.get_board(),
+                'white': game.white.name() if game.white else 'N/A',
+                'black': game.black.name() if game.black else 'N/A',
+                'result': game.result
+            }
+            for game in games
+        ]
+
+        return JsonResponse({'games': game_list})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+def manual_change_view(request):
+    return render(request, 'chess/manual_change.html', )
+
+
+def input_results_view(request):
+    ratings_dir = os.path.join(settings.BASE_DIR, 'files', 'ratings')
+    try:
+        existing_files = os.listdir(ratings_dir)
+    except FileNotFoundError:
+        existing_files = []
+
+    if ".DS_Store" in existing_files:
+        existing_files.remove(".DS_Store")
+
+    existing_files = sorted(
+        existing_files,
+        key=lambda f: os.path.getmtime(os.path.join(ratings_dir, f)),
+        reverse=True
+    )
+
+    context = {'existing_files': existing_files}
+    return render(request, 'chess/input_results.html', context)
+
+
+def download_existing_ratings_sheet(request):
+    file_name = request.GET.get('file')
+    if file_name:
+        file_path = os.path.join(CREATED_RATING_FILES_DIR, file_name)
+        if os.path.exists(file_path):
+            with open(file_path, 'rb') as f:
+                response = HttpResponse(f.read(), content_type='application/octet-stream')
+                response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+                return response
+        else:
+            raise Http404("File does not exist")
+    return redirect('input_results')
+
+
+def download_ratings(request):
+    file_path = write_ratings()
+
+    with open(file_path, 'rb') as excel_file:
+        response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+        return response
+
+
+def pair_view(request):
+    form = PairingDateForm()  # Create an instance of the form
+    return render(request, 'chess/pair.html', {'form': form})
+
+
+def download_pairings(request):
+    if request.method == 'POST':
+        form = PairingDateForm(request.POST)
+        if form.is_valid():
+            date_of_match = form.cleaned_data['date']
+
+            file_name = f'Pairings_{date_of_match}.xlsx'
+            file_path = os.path.join(CREATED_PAIRING_FILES_DIR, file_name)
+
+            if file_name in os.listdir(CREATED_PAIRING_FILES_DIR):
+                with open(file_path, 'rb') as f:
+                    response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    response['Content-Disposition'] = f'attachment; filename={file_name}'
+                    return response
+            else:
+                file_path = write_pairings(date_of_match)
+
+                with open(file_path, 'rb') as f:
+                    response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    response['Content-Disposition'] = f'attachment; filename=Pairings_{date_of_match}.xlsx'
+                    return response
+    else:
+        form = PairingDateForm()
+
+    return render(request, 'chess/pair.html', {'form': form})
+
+
+def help_view(request):
+    return render(request, 'chess/help.html', )
+
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 def search_results(request):
     form = SearchForm(request.GET or None)
     results = []
@@ -98,7 +205,6 @@ def search_results(request):
     if form.is_valid():
         query = form.cleaned_data['query']
         search_type = form.cleaned_data['search_board']
-        selected_models = form.cleaned_data['models']
 
         #searching a board
         if search_type == 'Board':
@@ -106,53 +212,31 @@ def search_results(request):
             number = -1
 
             if len(query) >= 2 and query[0].isalpha() and query[1:].isdigit():
-                letter = query[0]
+                letter = query[0].upper()
                 number = int(query[1:])
             elif len(query) >= 2 and query[-1].isalpha() and query[:-1].isdigit():
-                letter = query[-1]
+                letter = query[-1].upper()
                 number = int(query[:-1])
-            else:
-                return render(request, 'chess/search.html', {
-                    'form': form,
-                    'results': ["Unable to find board " + query],
-                })
 
             game_results = Game.objects.filter(
-                Q(board_letter=letter) & Q(board_number=number)
-            )
+                Q(board_letter=letter) & Q(board_number=number) & Q(is_active=True)
+            ).order_by('-date_of_match')
             results.extend(game_results)
 
         #searching a player
         elif search_type == 'Player':
-            if 'Player' in selected_models or 'All' in selected_models:
-                player_results = Player.objects.filter(
-                    Q(first_name__icontains=query) | Q(last_name__icontains=query)
-                )
-                results.extend(player_results)
+            player_results = Player.objects.filter(
+                Q(first_name__icontains=query) & Q(is_active=True) & Q(active_member=True) |
+                Q(last_name__icontains=query) & Q(is_active=True) & Q(active_member=True)
+            ).order_by('-rating', '-grade', 'last_name', 'first_name')
+            results.extend(player_results)
 
-            if 'LessonClass' in selected_models or 'All' in selected_models:
-                lesson_results = LessonClass.objects.filter(
-                    Q(teacher__first_name__icontains=query) |
-                    Q(teacher__last_name__icontains=query) |
-                    Q(co_teacher__first_name__icontains=query) |
-                    Q(co_teacher__last_name__icontains=query)
-                )
-                results.extend(lesson_results)
-
-            if 'Game' in selected_models or 'All' in selected_models:
-                game_results = Game.objects.filter(
-                    Q(white__first_name__icontains=query) |
-                    Q(white__last_name__icontains=query) |
-                    Q(black__first_name__icontains=query) |
-                    Q(black__last_name__icontains=query)
-                )
-                results.extend(game_results)
-
+        #search in a class
         else:
             players = Player.objects.filter(
-                Q(lesson_class__teacher__first_name__icontains=query) |
-                Q(lesson_class__co_teacher__first_name__icontains=query)
-            )
+                Q(lesson_class__teacher__first_name__icontains=query) & Q(is_active=True) |
+                Q(lesson_class__co_teacher__first_name__icontains=query) & Q(is_active=True)
+            ).order_by('-rating', '-grade', 'last_name', 'first_name')
             results.extend(players)
 
     if not results:

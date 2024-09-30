@@ -3,8 +3,6 @@ from random import choices
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import IntegrityError
 
 from .models import RegisteredUser, Game  # , Club
 
@@ -63,17 +61,19 @@ class SignUpForm(forms.ModelForm):
         return user
 
 
+class PairingDateForm(forms.Form):
+    date = forms.ChoiceField(choices=[], widget=forms.Select())
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        game_dates = Game.objects.values_list('date_of_match', flat=True).distinct()
+        self.fields['date'].choices = [(date, date) for date in game_dates]
+
+
 SEARCH_CHOICES = [
     ('Player', 'Player'),
     ('Board', 'Board'),
     ('Class', 'Class')
-]
-
-MODEL_CHOICES = [
-    ('Player', 'Player'),
-    ('LessonClass', 'LessonClass'),
-    ('Game', 'Game'),
-    ('All', 'All Models'),
 ]
 
 class SearchForm(forms.Form):
@@ -87,10 +87,4 @@ class SearchForm(forms.Form):
         label='Keyword:',
         max_length=100,
         required=True,
-    )
-    models = forms.MultipleChoiceField(
-        choices=MODEL_CHOICES,
-        widget=forms.CheckboxSelectMultiple(),
-        initial=['All'],
-        required=False
     )

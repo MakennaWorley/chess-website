@@ -1,0 +1,27 @@
+{%  extends 'chess/base.html' %}
+
+{% block content %}
+    <div class="block-container-list">
+        <div class="block-text">
+            <h1 class="center">Upload Ratings</h1>
+        </div>
+        <div class="block-text">
+            <h1 class="center">Download Ratings:</h1>
+            <div class="center">
+                <a href="{% url 'download_ratings' %}">
+                <button type="button">Create and Download Current Ratings</button>
+            </a>
+            </div>
+            <br>
+            <form method="get" action="{% url 'download_existing_ratings_sheet' %}" class="center">
+                <label for="file">Choose a pairing sheet:</label>
+                <select name="file" id="file">
+                    {% for filename in existing_files %}
+                        <option value="{{ filename }}">{{ filename }}</option>
+                    {% endfor %}
+                </select><br>
+                <button type="submit">Download Pre-existing Ratings Sheet</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

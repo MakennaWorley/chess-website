@@ -1,0 +1,36 @@
+{%  extends 'chess/base.html' %}
+
+{% block content %}
+    <div>
+        <h1>Help page</h1>
+        <h2>Home</h2>
+        <p class="indent">On the home page, you can see the current ratings as stored in the database or pairings for any week
+            in the database.</p>
+        
+        <p class="indent">There will also be a small pencil icon to the right of each entry, which will let you edit that paricular
+            entry</p>
+        <p class="indent">There will also have a search bar feature, this will hopefully dynamically search as you type.</p>
+        
+        <h2>Manual Change</h2>
+            <p class="indent">This hasn't been added yet, but this is where you can add a class or player manually. Or set
+                up the database for the next year.</p>
+        
+        <h2>Input Results</h2>
+            <p class="indent">This hasn't been added yet, but this is where you would search up the date and add the results.
+                With any substitution that happened, you will have to edit that row manually. On submission, this will then
+                update all the ratings based on the result of the game. Once you see a "success" message it is also safe to
+                go to "Pair" and pair your next week of games!</p>
+            <p class="indent">Under the "Download Ratings" section. This had two options:
+                <ul>Download a previous rating sheet already on the server</ul>
+                <ul>Create a new ratings sheet with information in the server, this will also save the file to the server for
+                    future reference</ul>
+            </p>
+        
+        <h2>Pair</h2>
+            <p class="indent">This hasn't been added yet, but this is where you would have the computer do the pairings! If
+                you have a specific match (such as a teacher vs student) in mind, you need to add those games BEFORE you hit
+                "Pair!" After a success message, you can head over to "Download" tab.</p>
+        <h2>Didn't Find the Answer You Were Looking For?</h2>
+            <p class="indent">Contact me at totally_my_email@email.com or text me at Not-To-Day!</p>
+    </div>
+{% endblock %}
