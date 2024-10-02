@@ -101,10 +101,10 @@ class RegisteredUser(models.Model):
 
 class Game(models.Model):
     class Result(models.TextChoices):
-        WHITE_WIN = 'W', 'White'
-        BLACK_WIN = 'B', 'Black'
-        DRAW = 'D', 'Draw'
-        UNKNOWN = 'U', 'Unknown'
+        WHITE = 'White'
+        BLACK = 'Black'
+        DRAW = 'Draw'
+        UNKNOWN = 'U'
 
     date_of_match = models.DateField()
     #club = models.ForeignKey(Club, on_delete=models.RESTRICT)
@@ -113,9 +113,10 @@ class Game(models.Model):
     board_letter = models.CharField(max_length=1)
     board_number = models.IntegerField()
     result = models.CharField(
-        max_length=1,
+        max_length=5,
         choices=Result.choices,
         default=Result.UNKNOWN,
+        null=True
     )
 
     modified_by = models.ForeignKey(User, on_delete=models.RESTRICT)

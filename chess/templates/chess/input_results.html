@@ -1,16 +1,52 @@
-{%  extends 'chess/base.html' %}
+{% extends 'chess/base.html' %}
 
 {% block content %}
     <div class="block-container-list">
         <div class="block-text">
-            <h1 class="center">Upload Ratings</h1>
+            <h1 class="center">Update Game Results</h1>
+
+            <div id="date-picker" class="center">
+                <label for="game-date">Select Date:</label>
+                <select id="game-date" name="game-date">
+                    {% for game in games_by_date %}
+                        <option value="{{ game.date_of_match }}">{{ game.date_of_match }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" id="dateSubmitBtn">Open Pairings</button>
+            </div>
+
+            <div id="gameModal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>Game Results for <span id="selectedDate"></span></h2>
+
+                    <form id="gameResultsForm" method="POST" action="{% url 'save_games' %}">
+                        {% csrf_token %}
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>Board</th>
+                                <th>White Player</th>
+                                <th>Result</th>
+                                <th>Black Player</th>
+                            </tr>
+                            </thead>
+                            <tbody id="gamesTableBody">
+                            </tbody>
+                        </table>
+                        <button type="submit">Submit</button>
+                    </form>
+                </div>
+            </div>
         </div>
+
+
         <div class="block-text">
             <h1 class="center">Download Ratings:</h1>
             <div class="center">
                 <a href="{% url 'download_ratings' %}">
-                <button type="button">Create and Download Current Ratings</button>
-            </a>
+                    <button type="button">Create and Download Current Ratings</button>
+                </a>
             </div>
             <br>
             <form method="get" action="{% url 'download_existing_ratings_sheet' %}" class="center">
@@ -24,4 +60,187 @@
             </form>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const dateSubmitBtn = document.getElementById('dateSubmitBtn');
+            const gameModal = document.getElementById('gameModal');
+            const closeModal = document.getElementsByClassName('close')[0];
+            const gamesTableBody = document.getElementById('gamesTableBody');
+            const selectedDateSpan = document.getElementById('selectedDate');
+            let players = []; // This will hold the list of unique players
+
+            // Helper function to format date to YYYY-MM-DD
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            // Function to populate the player dropdown with the original player selected, sorted alphabetically
+            function populatePlayerDropdown(selectedPlayer) {
+                let dropdownHTML = ''; // Initialize the HTML string for the dropdown options
+
+                // Sort players alphabetically
+                const sortedPlayers = players.sort();
+
+                sortedPlayers.forEach(player => {
+                    // Set the 'selected' attribute if the player matches the original player
+                    dropdownHTML += `<option value="${player}" ${player === selectedPlayer ? 'selected' : ''}>${player}</option>`;
+                });
+
+                dropdownHTML += `<option value="N/A" ${selectedPlayer === 'N/A' ? 'selected' : ''}>N/A</option>`; // Add N/A option
+
+                return dropdownHTML; // Return the HTML string for the dropdown
+            }
+
+            // Function to handle player selection and set other occurrences of that player to N/A
+            function handlePlayerSelection(selectedDropdown) {
+                const selectedPlayer = selectedDropdown.value;
+                const playerDropdowns = document.querySelectorAll('.player-select');
+
+                playerDropdowns.forEach(dropdown => {
+                    if (dropdown !== selectedDropdown && dropdown.value === selectedPlayer) {
+                        dropdown.value = 'N/A'; // Set other occurrences of the selected player to N/A
+                    }
+                });
+            }
+
+            dateSubmitBtn.addEventListener('click', function () {
+                const selectedDate = document.getElementById('game-date').value;
+                const formattedDate = formatDate(selectedDate); // Format the date
+
+                if (formattedDate) {
+                    fetch("{% url 'update_games' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({game_date: formattedDate})
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.games) {
+                                gamesTableBody.innerHTML = '';
+
+                                // Gather all unique players into an array and sort alphabetically
+                                players = [...new Set(data.games.flatMap(game => [game.white, game.black]))].sort();
+
+                                // Create array for board numbers
+                                const boards = [
+                                    ...Array.from({length: 5}, (_, i) => `G-${i + 1}`),
+                                    ...Array.from({length: 6}, (_, i) => `H-${i + 1}`),
+                                    ...Array.from({length: 22}, (_, i) => `I-${i + 1}`),
+                                    ...Array.from({length: 22}, (_, i) => `J-${i + 1}`)
+                                ];
+
+                                // Display the boards with game data
+                                boards.forEach(board => {
+                                    const game = data.games.find(game => game.board === board);
+                                    const row = `
+                                    <tr>
+                                        <td>${board}</td>
+                                        <td>
+                                            <select class="player-select" data-player="white">
+                                                ${populatePlayerDropdown(game ? game.white : 'N/A')}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select>
+                                                <option value="NONE" ${game && game.result === 'White' ? 'selected' : ''}></option>
+                                                <option value="White" ${game && game.result === 'White' ? 'selected' : ''}>White</option>
+                                                <option value="Black" ${game && game.result === 'Black' ? 'selected' : ''}>Black</option>
+                                                <option value="Draw" ${game && game.result === 'Draw' ? 'selected' : ''}>Draw</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select class="player-select" data-player="black">
+                                                ${populatePlayerDropdown(game ? game.black : 'N/A')}
+                                            </select>
+                                        </td>
+                                    </tr>
+                                `;
+                                    gamesTableBody.insertAdjacentHTML('beforeend', row);
+                                });
+
+                                // Attach change event listener to player dropdowns
+                                document.querySelectorAll('.player-select').forEach(select => {
+                                    select.addEventListener('change', function () {
+                                        handlePlayerSelection(this);
+                                    });
+                                });
+
+                                selectedDateSpan.textContent = formattedDate;
+                                gameModal.style.display = 'block';
+                                document.body.style.overflow = 'hidden';
+                            }
+                        })
+                        .catch(error => console.error('Error fetching games:', error));
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', function () {
+                const form = document.getElementById('gameResultsForm');
+
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+
+                    const selectedDate = document.getElementById('game-date').value;
+
+                    const gamesData = [];
+                    const rows = document.querySelectorAll('#gamesTableBody tr');
+
+                    rows.forEach(row => {
+                        const board = row.querySelector('td:first-child').textContent;
+                        const white = row.querySelector('select[data-player="white"]').value;
+                        const result = row.querySelector('select:nth-child(3)').value;
+                        const black = row.querySelector('select[data-player="black"]').value;
+
+                        gamesData.push({board, white, result, black});
+                    });
+
+                    fetch("{% url 'save_games' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({game_date: selectedDate, games: gamesData})
+                    })
+                    .then(response => {
+                        if (response.status === 401) {
+                            window.location.href = '{% url "login" %}';
+                        } else if (!response.ok) {
+                            throw new Error('Bad response from server');
+                        } else {
+                            return response.json();
+                        }
+                    })
+                    .then(data => {
+                        console.log('Server response:', data);
+                    })
+                    .catch(error => {
+                        console.error('Error submitting game results:', error);
+                    });
+                });
+            });
+
+            // Close the modal when the "close" button is clicked
+            closeModal.addEventListener('click', function () {
+                gameModal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            });
+
+            // Close the modal when clicking outside of the modal content
+            window.addEventListener('click', function (event) {
+                if (event.target === gameModal) {
+                    gameModal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+    </script>
 {% endblock %}

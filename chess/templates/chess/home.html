@@ -1,153 +1,161 @@
 {% extends 'chess/base.html' %}
 
 {% block content %}
-
-<div class="">
-    <form id="data-selection-form" class="center" style="height:3rem; padding:.5rem">
-        <label><input type="radio" name="data_type" value="players" checked>Ratings</label>
-        <!--<label><input type="radio" name="data_type" value="classes"> Classes</label>-->
-        <label><input type="radio" name="data_type" value="games">Pairings</label>
-        
-        <div id="date-picker" style="display:none;">
-            <label for="game-date">Select Date:</label>
-            <select id="game-date" name="game-date">
-                {% for game in games_by_date %}
-                    <option value="{{ game.date_of_match }}">{{ game.date_of_match }}</option>
+    <div class="">
+        <form id="data-selection-form" class="center" style="height:3rem; padding:.5rem">
+            <label><input type="radio" name="data_type" value="players" checked>Ratings</label>
+            <!--<label><input type="radio" name="data_type" value="classes"> Classes</label>-->
+            <label><input type="radio" name="data_type" value="games">Pairings</label>
+            
+            <div id="date-picker" style="display:none;">
+                <label for="game-date">Select Date:</label>
+                <select id="game-date" name="game-date">
+                    {% for game in games_by_date %}
+                        <option value="{{ game.date_of_match }}">{{ game.date_of_match }}</option>
+                        {% endfor %}
+                </select>
+            </div>
+        </form>
+    
+        <div id="players-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Rating</th>
+                        <th>Rating Change</th>
+                        <th>Grade</th>
+                        <th>Coach(s)</th>
+                        <th>Parent or Guardian</th>
+                        <th>Parent Email</th>
+                        <th>Parent Phone Number</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in players %}
+                        <tr>
+                            <td>{{ player.name }}</td>
+                            <td>{{ player.rating }}</td>
+                            <td>{{ player.improved_rating }}</td>
+                            <td>{{ player.grade }}</td>
+                            <td>{{ player.lesson_class.name }}</td>
+                            <td>{{ player.parent_or_guardian }}</td>
+                            <td>{{ player.email }}</td>
+                            <td>{{ player.phone }}</td>
+                        </tr>
                     {% endfor %}
-            </select>
+                </tbody>
+            </table>
         </div>
-    </form>
-
-    <div id="players-table">
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Rating</th>
-                    <th>Rating Change</th>
-                    <th>Grade</th>
-                    <th>Coach(s)</th>
-                    <th>Parent or Guardian</th>
-                    <th>Parent Email</th>
-                    <th>Parent Phone Number</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for player in players %}
+    
+        <div id="classes-table" style="display:none;">
+            <table>
+                <thead>
                     <tr>
-                        <td>{{ player.name }}</td>
-                        <td>{{ player.rating }}</td>
-                        <td>{{ player.improved_rating }}</td>
-                        <td>{{ player.grade }}</td>
-                        <td>{{ player.lesson_class.name }}</td>
-                        <td>{{ player.parent_or_guardian }}</td>
-                        <td>{{ player.email }}</td>
-                        <td>{{ player.phone }}</td>
+                        <th>Coach(es)</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <div id="classes-table" style="display:none;">
-        <table>
-            <thead>
-                <tr>
-                    <th>Coach(es)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for class in class_list %}
+                </thead>
+                <tbody>
+                    {% for class in class_list %}
+                        <tr>
+                            <td>{{ class.name }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    
+        <div id="games-table" style="display:none;">
+            <table>
+                <thead>
                     <tr>
-                        <td>{{ class.name }}</td>
+                        <th>Board</th>
+                        <th>White Player</th>
+                        <th>Result</th>
+                        <th>Black Player</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody id="games-tbody">
+                </tbody>
+            </table>
+        </div>
     </div>
-
-    <div id="games-table" style="display:none;">
-        <table>
-            <thead>
-                <tr>
-                    <th>Board</th>
-                    <th>White Player</th>
-                    <th>Result</th>
-                    <th>Black Player</th>
-                </tr>
-            </thead>
-            <tbody id="games-tbody">
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<script>
-    const form = document.getElementById('data-selection-form');
-    const playersTable = document.getElementById('players-table');
-    const classesTable = document.getElementById('classes-table');
-    const gamesTable = document.getElementById('games-table');
-    const datePicker = document.getElementById('date-picker');
-    const gameDateSelect = document.getElementById('game-date');
-
-    form.addEventListener('change', function(event) {
-        const selectedDataType = form.elements['data_type'].value;
-
-        playersTable.style.display = selectedDataType === 'players' ? '' : 'none';
-        classesTable.style.display = selectedDataType === 'classes' ? '' : 'none';
-        gamesTable.style.display = selectedDataType === 'games' ? '' : 'none';
-
-        if (selectedDataType === 'games') {
-            datePicker.style.display = '';
-            updateGames();
-        } else {
-            datePicker.style.display = 'none';
+    
+    <script>
+        const form = document.getElementById('data-selection-form');
+        const playersTable = document.getElementById('players-table');
+        const classesTable = document.getElementById('classes-table');
+        const gamesTable = document.getElementById('games-table');
+        const datePicker = document.getElementById('date-picker');
+        const gameDateSelect = document.getElementById('game-date');
+    
+        form.addEventListener('change', function(event) {
+            const selectedDataType = form.elements['data_type'].value;
+    
+            playersTable.style.display = selectedDataType === 'players' ? '' : 'none';
+            classesTable.style.display = selectedDataType === 'classes' ? '' : 'none';
+            gamesTable.style.display = selectedDataType === 'games' ? '' : 'none';
+    
+            if (selectedDataType === 'games') {
+                datePicker.style.display = '';
+                showGames();
+            } else {
+                datePicker.style.display = 'none';
+            }
+        });
+    
+        gameDateSelect.addEventListener('change', showGames);
+    
+        function showGames() {
+            const gameDate = formatDate(gameDateSelect.value);
+            console.log(gameDate)
+        
+            fetch("{% url 'update_games' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({
+                    game_date: gameDate,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                const gamesTbody = document.getElementById('games-tbody');
+                gamesTbody.innerHTML = '';
+        
+                // Create array for board numbers
+                const boards = [
+                    ...Array.from({ length: 5 }, (_, i) => `G-${i+1}`),
+                    ...Array.from({ length: 6 }, (_, i) => `H-${i+1}`),
+                    ...Array.from({ length: 22 }, (_, i) => `I-${i+1}`),
+                    ...Array.from({ length: 22 }, (_, i) => `J-${i+1}`)
+                ];
+        
+                // Go through each board number and display it
+                boards.forEach((board, index) => {
+                    const game = data.games ? data.games.find(game => game.board === board) : null;
+        
+                    const row = `<tr>
+                                    <td>${board}</td>
+                                    <td>${game ? game.white : 'N/A'}</td>
+                                    <td>${game ? game.result : ''}</td>
+                                    <td>${game ? game.black : 'N/A'}</td>
+                                 </tr>`;
+                    gamesTbody.insertAdjacentHTML('beforeend', row);
+                });
+            })
+            .catch(error => console.error('Error:', error));
         }
-    });
-
-    gameDateSelect.addEventListener('change', updateGames);
-
-    function updateGames() {
-        const gameDate = formatDate(gameDateSelect.value);
-        console.log(gameDate)
-
-        fetch("{% url 'update_games' %}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}',
-            },
-            body: JSON.stringify({
-                game_date: gameDate,
-            }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data)
-            const gamesTbody = document.getElementById('games-tbody');
-            gamesTbody.innerHTML = '';
-
-            data.games.forEach(game => {
-                const row = `<tr>
-                                <td>${game.board}</td>
-                                <td>${game.white}</td>
-                                <td>${game.result}</td>
-                                <td>${game.black}</td>
-                             </tr>`;
-                gamesTbody.insertAdjacentHTML('beforeend', row);
-            });
-        })
-        .catch(error => console.error('Error:', error));
-    }
-
-    function formatDate(dateStr) {
-        const date = new Date(dateStr);
-        const year = date.getFullYear();
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const day = date.getDate().toString().padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-</script>
-
+    
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+    
+    </script>
 {% endblock %}

@@ -54,7 +54,7 @@ class Command(BaseCommand):
 
                 result = row.get('result')
                 if result is None or result.lower() in ['', 'NULL', 'None']:
-                    result = 'U'
+                    result = ''
 
                 game, created = Game.objects.get_or_create(
                     date_of_match=date,

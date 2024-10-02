@@ -1,10 +1,13 @@
 import os
 import json
+from datetime import datetime
+from urllib.parse import unquote
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.db import transaction
 from django.db.models import Q, Count
 from django.http import HttpResponseRedirect, HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect
@@ -118,6 +121,8 @@ def manual_change_view(request):
 
 
 def input_results_view(request):
+    games_by_date = Game.objects.filter(is_active=True).values('date_of_match').annotate(game_count=Count('id')).order_by('-date_of_match')
+
     ratings_dir = os.path.join(settings.BASE_DIR, 'files', 'ratings')
     try:
         existing_files = os.listdir(ratings_dir)
@@ -133,8 +138,58 @@ def input_results_view(request):
         reverse=True
     )
 
-    context = {'existing_files': existing_files}
+    context = {
+        'games_by_date': games_by_date,
+        'existing_files': existing_files
+    }
     return render(request, 'chess/input_results.html', context)
+
+
+def save_games(request):
+    if request.method == 'POST':
+        try:
+            print(request.headers)
+            print(request.body)
+
+            data = json.loads(request.body)
+            game_date = data.get('game_date')
+            games = data.get('games', [])
+
+            differences = []
+
+            for submitted_game in games:
+                board = submitted_game['board']
+                white = submitted_game['white']
+                result = submitted_game['result']
+                black = submitted_game['black']
+
+                board_letter, board_number = board.split('-')
+
+                try:
+                    game = Game.objects.get(date_of_match=game_date, board_letter=board_letter, board_number=board_number)
+
+                    game_diff = {}
+                    if game.white != white:
+                        game_diff['white'] = {'old': game.white, 'new': white}
+                    if game.result != result:
+                        game_diff['result'] = {'old': game.result, 'new': result}
+                    if game.black != black:
+                        game_diff['black'] = {'old': game.black, 'new': black}
+
+                    if game_diff:
+                        game_diff['board'] = board
+                        differences.append(game_diff)
+
+                except Game.DoesNotExist:
+                    differences.append({'error': f'Game on board {board} for date {game_date} not found'})
+
+            print('Differences:', differences)
+
+            return JsonResponse({'status': 'success', 'differences': differences}, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
 
 def download_existing_ratings_sheet(request):
