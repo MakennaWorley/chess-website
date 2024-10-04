@@ -32,6 +32,14 @@
                             </tr>
                             </thead>
                             <tbody id="gamesTableBody">
+                            {% for game in games %}
+                                <tr>
+                                    <td>{{ game.board }}</td>
+                                    <td>{{ form.white_player }}</td>
+                                    <td>{{ form.result }}</td>
+                                    <td>{{ form.black_player }}</td>
+                                </tr>
+                            {% endfor %}
                             </tbody>
                         </table>
                         <button type="submit">Submit</button>

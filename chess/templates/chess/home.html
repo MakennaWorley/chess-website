@@ -88,6 +88,14 @@
         const gamesTable = document.getElementById('games-table');
         const datePicker = document.getElementById('date-picker');
         const gameDateSelect = document.getElementById('game-date');
+        
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
     
         form.addEventListener('change', function(event) {
             const selectedDataType = form.elements['data_type'].value;
@@ -108,7 +116,6 @@
     
         function showGames() {
             const gameDate = formatDate(gameDateSelect.value);
-            console.log(gameDate)
         
             fetch("{% url 'update_games' %}", {
                 method: 'POST',
@@ -124,16 +131,14 @@
             .then(data => {
                 const gamesTbody = document.getElementById('games-tbody');
                 gamesTbody.innerHTML = '';
-        
-                // Create array for board numbers
+                
                 const boards = [
                     ...Array.from({ length: 5 }, (_, i) => `G-${i+1}`),
                     ...Array.from({ length: 6 }, (_, i) => `H-${i+1}`),
                     ...Array.from({ length: 22 }, (_, i) => `I-${i+1}`),
                     ...Array.from({ length: 22 }, (_, i) => `J-${i+1}`)
                 ];
-        
-                // Go through each board number and display it
+                
                 boards.forEach((board, index) => {
                     const game = data.games ? data.games.find(game => game.board === board) : null;
         
@@ -147,14 +152,6 @@
                 });
             })
             .catch(error => console.error('Error:', error));
-        }
-    
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            return `${year}-${month}-${day}`;
         }
     
     </script>

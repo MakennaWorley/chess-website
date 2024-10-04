@@ -12,10 +12,9 @@ from django.db.models import Q, Count
 from django.http import HttpResponseRedirect, HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect
 
-from .forms import SignUpForm, SearchForm, PairingDateForm
-from .models import RegisteredUser, Player, LessonClass, Game #, Club
+from .forms import SignUpForm, SearchForm, PairingDateForm, GameSaveForm
+from .models import RegisteredUser, Player, LessonClass, Game  # , Club
 from .write_to_file import write_ratings, write_pairings
-
 
 GAME_SORT_ORDER = ['G', 'H', 'I', 'J']
 CREATED_RATING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'ratings')
@@ -75,9 +74,10 @@ def register(request):
 
 
 def home_view(request):
-    games_by_date = Game.objects.filter(is_active=True).values('date_of_match').annotate(game_count=Count('id')).order_by('-date_of_match')
+    games_by_date = Game.objects.filter(is_active=True).values('date_of_match').annotate(
+        game_count=Count('id')).order_by('-date_of_match')
 
-    players = Player.objects.filter(active_member=True, is_active=True, is_volunteer=False).order_by('-rating')
+    players = Player.objects.filter(active_member=True, is_active=True, is_volunteer=False).order_by('-rating', '-grade', 'last_name', 'first_name')
     class_list = LessonClass.objects.filter(is_active=True)
 
     context = {
@@ -94,12 +94,8 @@ def update_games(request):
         data = json.loads(request.body)
         game_date = data.get('game_date')
 
-        #games = Game.objects.filter(date_of_match=game_date) if game_type == 'by_date' else Game.objects.all()
-
-        if game_date:
-            games = Game.objects.filter(date_of_match=game_date)
-        else:
-            games = []
+        games = Game.objects.filter(date_of_match=game_date)
+        players = Player.objects.filter(active_member=True, is_active=True).order_by('last_name', 'first_name')
 
         game_list = [
             {
@@ -111,7 +107,9 @@ def update_games(request):
             for game in games
         ]
 
-        return JsonResponse({'games': game_list})
+        players_list = [{'name': player.name()} for player in players]
+
+        return JsonResponse({'games': game_list, 'players': players_list})
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
@@ -121,7 +119,11 @@ def manual_change_view(request):
 
 
 def input_results_view(request):
-    games_by_date = Game.objects.filter(is_active=True).values('date_of_match').annotate(game_count=Count('id')).order_by('-date_of_match')
+    form = GameSaveForm()
+
+    games_by_date = Game.objects.filter(is_active=True).values('date_of_match').annotate(
+        game_count=Count('id')).order_by('-date_of_match')
+    players = Player.objects.filter(active_member=True, is_active=True).order_by('last_name', 'first_name')
 
     ratings_dir = os.path.join(settings.BASE_DIR, 'files', 'ratings')
     try:
@@ -139,6 +141,8 @@ def input_results_view(request):
     )
 
     context = {
+        'form': form,
+        'players': players,
         'games_by_date': games_by_date,
         'existing_files': existing_files
     }
@@ -148,12 +152,16 @@ def input_results_view(request):
 def save_games(request):
     if request.method == 'POST':
         try:
-            print(request.headers)
-            print(request.body)
-
-            data = json.loads(request.body)
+            data = json.loads(request.body.decode('utf-8'))
             game_date = data.get('game_date')
-            games = data.get('games', [])
+            games = data.get('games')
+
+            # Check for missing data
+            if not games:
+                return JsonResponse({'status': 'error', 'message': 'No games data received'}, status=400)
+
+            print(f"Game Date: {game_date}")
+            print(f"Games: {games}")
 
             differences = []
 
@@ -186,10 +194,10 @@ def save_games(request):
             print('Differences:', differences)
 
             return JsonResponse({'status': 'success', 'differences': differences}, status=200)
-
         except json.JSONDecodeError:
-            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'}, status=400)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
 
 def download_existing_ratings_sheet(request):
@@ -210,7 +218,8 @@ def download_ratings(request):
     file_path = write_ratings()
 
     with open(file_path, 'rb') as excel_file:
-        response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response = HttpResponse(excel_file.read(),
+                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
         return response
 
@@ -231,14 +240,16 @@ def download_pairings(request):
 
             if file_name in os.listdir(CREATED_PAIRING_FILES_DIR):
                 with open(file_path, 'rb') as f:
-                    response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    response = HttpResponse(f.read(),
+                                            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
                     response['Content-Disposition'] = f'attachment; filename={file_name}'
                     return response
             else:
                 file_path = write_pairings(date_of_match)
 
                 with open(file_path, 'rb') as f:
-                    response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    response = HttpResponse(f.read(),
+                                            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
                     response['Content-Disposition'] = f'attachment; filename=Pairings_{date_of_match}.xlsx'
                     return response
     else:
@@ -250,7 +261,8 @@ def download_pairings(request):
 def help_view(request):
     return render(request, 'chess/help.html', )
 
-#-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 def search_results(request):
@@ -261,7 +273,7 @@ def search_results(request):
         query = form.cleaned_data['query']
         search_type = form.cleaned_data['search_board']
 
-        #searching a board
+        # searching a board
         if search_type == 'Board':
             letter = ''
             number = -1
@@ -278,7 +290,7 @@ def search_results(request):
             ).order_by('-date_of_match')
             results.extend(game_results)
 
-        #searching a player
+        # searching a player
         elif search_type == 'Player':
             player_results = Player.objects.filter(
                 Q(first_name__icontains=query) & Q(is_active=True) & Q(active_member=True) |
@@ -286,7 +298,7 @@ def search_results(request):
             ).order_by('-rating', '-grade', 'last_name', 'first_name')
             results.extend(player_results)
 
-        #search in a class
+        # search in a class
         else:
             players = Player.objects.filter(
                 Q(lesson_class__teacher__first_name__icontains=query) & Q(is_active=True) |

@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
 
-from .models import RegisteredUser, Game  # , Club
+from .models import RegisteredUser, Player, Game  # , Club
 
 
 class LoginForm(AuthenticationForm):
@@ -59,6 +59,25 @@ class SignUpForm(forms.ModelForm):
         print(registered_user, registered_user.club)'''
         registered_user.save()
         return user
+
+
+RESULTS = [
+    ('', ''),
+    ('White', 'White'),
+    ('Black', 'Black'),
+    ('Draw', 'Draw'),
+]
+
+class GameSaveForm(forms.Form):
+    board = forms.CharField(max_length=100)
+    white_player = forms.ModelChoiceField(queryset=Player.objects.filter(is_active=True),
+                                          widget=forms.Select,
+                                          label="White Player")
+    result = forms.ChoiceField(choices=RESULTS, widget=forms.Select)
+    black_player = forms.ModelChoiceField(
+                                          queryset=Player.objects.filter(is_active=True),
+                                          widget=forms.Select,
+                                          label="Black Player")
 
 
 class PairingDateForm(forms.Form):
