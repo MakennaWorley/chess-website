@@ -20,7 +20,7 @@
                     <span class="close">&times;</span>
                     <h2>Game Results for <span id="selectedDate"></span></h2>
 
-                    <form id="gameResultsForm" method="POST" action="{% url 'save_games' %}">
+                    <form id="gameResultsForm" method="POST" action="#">
                         {% csrf_token %}
                         <table>
                             <thead>
@@ -77,8 +77,7 @@
             const gamesTableBody = document.getElementById('gamesTableBody');
             const selectedDateSpan = document.getElementById('selectedDate');
             let players = []; // This will hold the list of unique players
-
-            // Helper function to format date to YYYY-MM-DD
+            
             function formatDate(dateString) {
                 const date = new Date(dateString);
                 const year = date.getFullYear();
@@ -118,7 +117,7 @@
 
             dateSubmitBtn.addEventListener('click', function () {
                 const selectedDate = document.getElementById('game-date').value;
-                const formattedDate = formatDate(selectedDate); // Format the date
+                const formattedDate = formatDate(selectedDate);
 
                 if (formattedDate) {
                     fetch("{% url 'update_games' %}", {
@@ -195,28 +194,36 @@
 
                 form.addEventListener('submit', function (event) {
                     event.preventDefault();
-
+                    
                     const selectedDate = document.getElementById('game-date').value;
+                    const formattedDate = formatDate(selectedDate);
 
                     const gamesData = [];
                     const rows = document.querySelectorAll('#gamesTableBody tr');
 
                     rows.forEach(row => {
-                        const board = row.querySelector('td:first-child').textContent;
-                        const white = row.querySelector('select[data-player="white"]').value;
-                        const result = row.querySelector('select:nth-child(3)').value;
-                        const black = row.querySelector('select[data-player="black"]').value;
-
+                        const board = row.querySelector('td:first-child')?.textContent || 'Unknown Board';
+                        const whiteSelect = row.querySelector('select[data-player="white"]');
+                        const resultSelect = row.querySelector('select:nth-child(3)');
+                        const blackSelect = row.querySelector('select[data-player="black"]');
+                    
+                        const white = whiteSelect ? whiteSelect.value : 'N/A';
+                        const result = resultSelect ? resultSelect.value : 'NONE';
+                        const black = blackSelect ? blackSelect.value : 'N/A';
+                    
                         gamesData.push({board, white, result, black});
                     });
 
+                    alert(gamesData);
+
+                    setTimeout(() => {
                     fetch("{% url 'save_games' %}", {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRFToken': '{{ csrf_token }}'
                         },
-                        body: JSON.stringify({game_date: selectedDate, games: gamesData})
+                        body: JSON.stringify({game_date: formattedDate, games: gamesData})
                     })
                     .then(response => {
                         if (response.status === 401) {
@@ -229,6 +236,11 @@
                     })
                     .then(data => {
                         console.log('Server response:', data);
+                        if (data.status === 'success') {
+                            alert('Game results saved successfully!');
+                        } else {
+                            alert('Error saving game results: ' + data.message);
+                        }
                     })
                     .catch(error => {
                         console.error('Error submitting game results:', error);
@@ -250,5 +262,6 @@
                 }
             });
         });
+        }, 50000);
     </script>
 {% endblock %}

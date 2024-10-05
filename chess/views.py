@@ -150,6 +150,7 @@ def input_results_view(request):
 
 
 def save_games(request):
+    print('saving games')
     if request.method == 'POST':
         try:
             data = json.loads(request.body.decode('utf-8'))
@@ -163,37 +164,7 @@ def save_games(request):
             print(f"Game Date: {game_date}")
             print(f"Games: {games}")
 
-            differences = []
-
-            for submitted_game in games:
-                board = submitted_game['board']
-                white = submitted_game['white']
-                result = submitted_game['result']
-                black = submitted_game['black']
-
-                board_letter, board_number = board.split('-')
-
-                try:
-                    game = Game.objects.get(date_of_match=game_date, board_letter=board_letter, board_number=board_number)
-
-                    game_diff = {}
-                    if game.white != white:
-                        game_diff['white'] = {'old': game.white, 'new': white}
-                    if game.result != result:
-                        game_diff['result'] = {'old': game.result, 'new': result}
-                    if game.black != black:
-                        game_diff['black'] = {'old': game.black, 'new': black}
-
-                    if game_diff:
-                        game_diff['board'] = board
-                        differences.append(game_diff)
-
-                except Game.DoesNotExist:
-                    differences.append({'error': f'Game on board {board} for date {game_date} not found'})
-
-            print('Differences:', differences)
-
-            return JsonResponse({'status': 'success', 'differences': differences}, status=200)
+            return JsonResponse({'status': 'success'}, status=200)
         except json.JSONDecodeError:
             return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'}, status=400)
     else:
