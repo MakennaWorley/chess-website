@@ -86,21 +86,16 @@
                 return `${year}-${month}-${day}`;
             }
 
-            // Function to populate the player dropdown with the original player selected, sorted alphabetically
             function populatePlayerDropdown(selectedPlayer) {
-                let dropdownHTML = ''; // Initialize the HTML string for the dropdown options
+                let dropdownHTML = '';
 
-                // Sort players alphabetically
-                const sortedPlayers = players.sort();
-
-                sortedPlayers.forEach(player => {
-                    // Set the 'selected' attribute if the player matches the original player
+                players.forEach(player => {
                     dropdownHTML += `<option value="${player}" ${player === selectedPlayer ? 'selected' : ''}>${player}</option>`;
                 });
 
                 dropdownHTML += `<option value="N/A" ${selectedPlayer === 'N/A' ? 'selected' : ''}>N/A</option>`; // Add N/A option
 
-                return dropdownHTML; // Return the HTML string for the dropdown
+                return dropdownHTML;
             }
 
             // Function to handle player selection and set other occurrences of that player to N/A
@@ -110,7 +105,7 @@
 
                 playerDropdowns.forEach(dropdown => {
                     if (dropdown !== selectedDropdown && dropdown.value === selectedPlayer) {
-                        dropdown.value = 'N/A'; // Set other occurrences of the selected player to N/A
+                        dropdown.value = 'N/A';
                     }
                 });
             }
@@ -156,7 +151,7 @@
                                             </select>
                                         </td>
                                         <td>
-                                            <select>
+                                            <select name="result-{{ board }}" class="result-select">
                                                 <option value="NONE" ${game && game.result === 'White' ? 'selected' : ''}></option>
                                                 <option value="White" ${game && game.result === 'White' ? 'selected' : ''}>White</option>
                                                 <option value="Black" ${game && game.result === 'Black' ? 'selected' : ''}>Black</option>
@@ -204,7 +199,7 @@
                     rows.forEach(row => {
                         const board = row.querySelector('td:first-child')?.textContent || 'Unknown Board';
                         const whiteSelect = row.querySelector('select[data-player="white"]');
-                        const resultSelect = row.querySelector('select:nth-child(3)');
+                        const resultSelect = row.querySelector('.result-select');
                         const blackSelect = row.querySelector('select[data-player="black"]');
                     
                         const white = whiteSelect ? whiteSelect.value : 'N/A';
@@ -213,8 +208,6 @@
                     
                         gamesData.push({board, white, result, black});
                     });
-
-                    alert(gamesData);
 
                     setTimeout(() => {
                     fetch("{% url 'save_games' %}", {
@@ -237,9 +230,9 @@
                     .then(data => {
                         console.log('Server response:', data);
                         if (data.status === 'success') {
-                            alert('Game results saved successfully!');
+                            alert('Game results sent successfully!');
                         } else {
-                            alert('Error saving game results: ' + data.message);
+                            alert('Error sending game results\n' + data.message);
                         }
                     })
                     .catch(error => {

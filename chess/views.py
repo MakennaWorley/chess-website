@@ -21,6 +21,14 @@ CREATED_RATING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', '
 CREATED_PAIRING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'pairings')
 
 
+BOARDS = [
+        *[f"G-{i + 1}" for i in range(5)],
+        *[f"H-{i + 1}" for i in range(6)],
+        *[f"I-{i + 1}" for i in range(22)],
+        *[f"J-{i + 1}" for i in range(22)]
+    ]
+
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
@@ -150,19 +158,61 @@ def input_results_view(request):
 
 
 def save_games(request):
-    print('saving games')
     if request.method == 'POST':
         try:
             data = json.loads(request.body.decode('utf-8'))
             game_date = data.get('game_date')
             games = data.get('games')
 
-            # Check for missing data
             if not games:
                 return JsonResponse({'status': 'error', 'message': 'No games data received'}, status=400)
 
-            print(f"Game Date: {game_date}")
-            print(f"Games: {games}")
+            games_keyed = {
+                game['board']: {key: value for key, value in game.items() if key != 'board'} for game in games
+                if not (game['white'] == "N/A" and game['black'] == "N/A")
+            }
+            #print(games_keyed)
+
+            games_db = Game.objects.filter(date_of_match=game_date)
+            games_db_keyed = {
+                game.get_board(): game for game in games_db
+            }
+            #print(games_db_keyed)
+
+            #games not in the db
+            new_games_to_db = {
+                board: details for board, details in games_keyed.items() if board not in games_db_keyed
+            }
+            print("Games being added:", new_games_to_db)
+
+            #games not in data
+            games_not_in_data = {
+                board: game for board, game in games_db_keyed.items() if board not in games_keyed
+            }
+            print("Games being deactivated:", games_not_in_data)
+
+            updated_games = {}
+
+            for board, details in games_keyed.items():
+                if board in games_db_keyed:
+                    db_game = games_db_keyed[board]
+
+                    white_db = db_game.white.name() if db_game.white is not None else "N/A"
+                    black_db = db_game.black.name() if db_game.black is not None else "N/A"
+                    result_db = db_game.result or "NONE"
+
+                    if details['white'] == "N/A" or details['black'] == "N/A":
+                        print(board, "is not going to be updated with a result")
+
+                    if white_db != details['white'] or black_db != details['black'] or result_db != details['result']:
+                        updated_games[board] = {
+                            'white': details['white'],
+                            'black': details['black'],
+                            'result': details['result'],
+                        }
+            print("Games being updated:", updated_games)
+
+
 
             return JsonResponse({'status': 'success'}, status=200)
         except json.JSONDecodeError:
