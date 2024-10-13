@@ -225,8 +225,8 @@ def save_games(request):
                     black_db = db_game.black.name() if db_game.black is not None else "N/A"
                     result_db = db_game.result or "NONE"
 
-                    if details['white'] == "N/A" or details['black'] == "N/A":
-                        print(board, "is not going to be updated with a result")
+                    '''if details['white'] == "N/A" or details['black'] == "N/A":
+                        print(board, "is not going to be updated with a result")'''
 
                     if white_db != details['white'] or black_db != details['black'] or result_db != details['result']:
                         updated_games[board] = details

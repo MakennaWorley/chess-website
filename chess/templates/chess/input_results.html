@@ -224,6 +224,9 @@
                     gamesData.push({board, white, result, black});
                 });
 
+                gameModal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+
                 try {
                     const response = await fetch("{% url 'save_games' %}", {
                         method: 'POST',
@@ -248,7 +251,19 @@
                     } else {
                         const data = await response.json();
                         if (data.status === 'success') {
-                            alert('Game results sent successfully!');
+                            let successMessage = 'Game results sent successfully!';
+                
+                            if (data.added_games && data.added_games.length > 0) {
+                                successMessage += `\n\nAdded games:\n- ${data.added_games.join('\n- ')}`;
+                            }
+                            if (data.deactivated_games && data.deactivated_games.length > 0) {
+                                successMessage += `\n\nDeactivated games:\n- ${data.deactivated_games.join('\n- ')}`;
+                            }
+                            if (data.updated_games && data.updated_games.length > 0) {
+                                successMessage += `\n\nUpdated games:\n- ${data.updated_games.join('\n- ')}`;
+                            }
+                
+                            alert(successMessage);
                         } else {
                             let errorDetails = data.message || 'An unknown error occurred.';
     
