@@ -99,27 +99,38 @@ def home_view(request):
 
 def update_games(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        game_date = data.get('game_date')
+        try:
+            # Parse the request body for the selected game date
+            body = json.loads(request.body)
+            game_date = body.get('game_date')
 
-        games = Game.objects.filter(date_of_match=game_date)
-        players = Player.objects.filter(active_member=True, is_active=True).order_by('last_name', 'first_name')
+            # Explicitly fetch the latest games for the selected date, bypassing any queryset caching
+            games = Game.objects.filter(date_of_match=game_date, is_active=True).all()
 
-        game_list = [
-            {
-                'board': game.get_board(),
-                'white': game.white.name() if game.white else 'N/A',
-                'black': game.black.name() if game.black else 'N/A',
-                'result': game.result
-            }
-            for game in games
-        ]
+            # Prepare game data for the response
+            games_data = []
+            for game in games:
+                if game.result == 'NONE':
+                    result = ''
+                else:
+                    result = game.result
 
-        players_list = [{'name': player.name()} for player in players]
+                games_data.append({
+                    'board': game.get_board(),
+                    'white': game.white.name() if game.white else 'N/A',
+                    'black': game.black.name() if game.black else 'N/A',
+                    'result': result
+                })
 
-        return JsonResponse({'games': game_list, 'players': players_list})
+            # Return the game data as JSON response
+            return JsonResponse({'games': games_data}, status=200)
 
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+        except Exception as e:
+            # Return an error response in case of any issues
+            return JsonResponse({'error': str(e)}, status=400)
+
+            # Return an error response if the request is not a POST request
+        return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 
 def manual_change_view(request):
