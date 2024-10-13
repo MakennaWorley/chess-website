@@ -92,7 +92,6 @@
                     }
                     const data = await response.json();
                     cachedPlayers = data.players;
-                    print(cachedPlayers)
                     return cachedPlayers;
                 } catch (error) {
                     console.error('There was a problem fetching player data:', error);
