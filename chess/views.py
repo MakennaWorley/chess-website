@@ -131,7 +131,6 @@ def input_results_view(request):
 
     games_by_date = Game.objects.filter(is_active=True).values('date_of_match').annotate(
         game_count=Count('id')).order_by('-date_of_match')
-    players = Player.objects.filter(active_member=True, is_active=True).order_by('last_name', 'first_name')
 
     ratings_dir = os.path.join(settings.BASE_DIR, 'files', 'ratings')
     try:
@@ -150,11 +149,25 @@ def input_results_view(request):
 
     context = {
         'form': form,
-        'players': players,
         'games_by_date': games_by_date,
         'existing_files': existing_files
     }
     return render(request, 'chess/input_results.html', context)
+
+
+def get_players(request):
+    players = Player.objects.filter(active_member=True, is_active=True).order_by('last_name', 'first_name')
+
+    players_data = [
+        {
+            "id": player.id,
+            "first_name": player.first_name,
+            "last_name": player.last_name
+        }
+        for player in players
+    ]
+
+    return JsonResponse({'players': players_data})
 
 
 def save_games(request):
