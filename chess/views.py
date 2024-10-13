@@ -1,16 +1,16 @@
 import os
 import json
-from datetime import datetime
-from urllib.parse import unquote
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q, Count
 from django.http import HttpResponseRedirect, HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect
+from django.utils import timezone
 
 from .forms import SignUpForm, SearchForm, PairingDateForm, GameSaveForm
 from .models import RegisteredUser, Player, LessonClass, Game  # , Club
@@ -218,16 +218,75 @@ def save_games(request):
                         print(board, "is not going to be updated with a result")
 
                     if white_db != details['white'] or black_db != details['black'] or result_db != details['result']:
-                        updated_games[board] = {
-                            'white': details['white'],
-                            'black': details['black'],
-                            'result': details['result'],
-                        }
+                        updated_games[board] = details
             print("Games being updated:", updated_games)
 
+            # Prepare results messages
+            added_games_report = []
+            deactivated_games_report = []
+            updated_games_report = []
 
+            user = request.user
 
-            return JsonResponse({'status': 'success'}, status=200)
+            with transaction.atomic():
+                # Add new games
+                for board, details in new_games_to_db.items():
+                    try:
+                        white_player = Player.objects.get(first_name=details['white'].split(', ')[1],
+                                                          last_name=details['white'].split(', ')[0]) if details[
+                                                                                                            'white'] != "N/A" else None
+                        black_player = Player.objects.get(first_name=details['black'].split(', ')[1],
+                                                          last_name=details['black'].split(', ')[0]) if details[
+                                                                                                            'black'] != "N/A" else None
+                        Game.add_game(
+                            date_of_match=game_date,
+                            board_letter=board[0],
+                            board_number=int(board[2:]),
+                            white=white_player,
+                            black=black_player,
+                            result=details['result'],
+                            modified_by=user
+                        )
+                        added_games_report.append(f"Added game for board {board}")
+                    except ValidationError as e:
+                        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+                # Deactivate games
+                for board, game in games_not_in_data.items():
+                    game.is_active = False
+                    game.end_at = timezone.now()
+                    game.save()
+                    deactivated_games_report.append(f"Deactivated game for board {board}")
+
+                # Update existing games
+                for board, details in updated_games.items():
+                    db_game = games_db_keyed[board]
+                    white_player = Player.objects.get(first_name=details['white'].split(', ')[1],
+                                                      last_name=details['white'].split(', ')[0]) if details[
+                                                                                                        'white'] != "N/A" else None
+                    black_player = Player.objects.get(first_name=details['black'].split(', ')[1],
+                                                      last_name=details['black'].split(', ')[0]) if details[
+                                                                                                        'black'] != "N/A" else None
+                    db_game.update_game(
+                        date_of_match=game_date,
+                        board_letter=board[0],
+                        board_number=int(board[2:]),
+                        white=white_player,
+                        black=black_player,
+                        result=details['result'],
+                        modified_by=user
+                    )
+                    updated_games_report.append(f"Updated game for board {board}")
+
+            # Prepare the final response
+            response_data = {
+                'status': 'success',
+                'message': 'Games processed successfully',
+                'added_games': added_games_report,
+                'deactivated_games': deactivated_games_report,
+                'updated_games': updated_games_report
+            }
+            return JsonResponse(response_data, status=200)
         except json.JSONDecodeError:
             return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'}, status=400)
     else:

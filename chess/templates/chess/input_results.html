@@ -81,7 +81,6 @@
             
             async function fetchPlayers() {
                 if (cachedPlayers) {
-                    // If players are already cached, return them
                     return cachedPlayers;
                 }
             
@@ -108,7 +107,7 @@
 
             async function populatePlayerDropdown(selectedPlayer) {
                 let dropdownHTML = '';
-        
+    
                 const players = await fetchPlayers();
 
                 if (Array.isArray(players)) {
@@ -117,7 +116,7 @@
                         dropdownHTML += `<option value="${playerName}" ${playerName === selectedPlayer ? 'selected' : ''}>${playerName}</option>`;
                     });
                 }
-            
+    
                 dropdownHTML += `<option value="N/A" ${selectedPlayer === 'N/A' ? 'selected' : ''}>N/A</option>`;
                 return dropdownHTML;
             }
@@ -138,7 +137,7 @@
                 event.preventDefault();
                 const selectedDate = document.getElementById('game-date').value;
                 const formattedDate = formatDate(selectedDate);
-
+    
                 if (formattedDate) {
                     try {
                         const response = await fetch("{% url 'update_games' %}", {
@@ -154,11 +153,11 @@
                         if (data.games) {
                             gamesTableBody.innerHTML = '';
                             const boards = [
-                                    ...Array.from({length: 5}, (_, i) => `G-${i + 1}`),
-                                    ...Array.from({length: 6}, (_, i) => `H-${i + 1}`),
-                                    ...Array.from({length: 22}, (_, i) => `I-${i + 1}`),
-                                    ...Array.from({length: 22}, (_, i) => `J-${i + 1}`)
-                                ];
+                                ...Array.from({length: 5}, (_, i) => `G-${i + 1}`),
+                                ...Array.from({length: 6}, (_, i) => `H-${i + 1}`),
+                                ...Array.from({length: 22}, (_, i) => `I-${i + 1}`),
+                                ...Array.from({length: 22}, (_, i) => `J-${i + 1}`)
+                            ];
 
                             for (const board of boards) {
                                 const game = data.games.find(game => game.board === board);
@@ -187,8 +186,7 @@
                                 `;
                                 gamesTableBody.insertAdjacentHTML('beforeend', row);
                             }
-
-                            // Attach change event listener to player dropdowns
+    
                             document.querySelectorAll('.player-select').forEach(select => {
                                 select.addEventListener('change', function () {
                                     handlePlayerSelection(this);
@@ -207,22 +205,22 @@
 
             document.getElementById('gameResultsForm').addEventListener('submit', async function (event) {
                 event.preventDefault();
-        
+    
                 const selectedDate = document.getElementById('game-date').value;
                 const formattedDate = formatDate(selectedDate);
                 const gamesData = [];
                 const rows = document.querySelectorAll('#gamesTableBody tr');
-        
+    
                 rows.forEach(row => {
                     const board = row.querySelector('td:first-child')?.textContent || 'Unknown Board';
                     const whiteSelect = row.querySelector('select[data-player="white"]');
                     const resultSelect = row.querySelector('.result-select');
                     const blackSelect = row.querySelector('select[data-player="black"]');
-        
+    
                     const white = whiteSelect ? whiteSelect.value : 'N/A';
                     const result = resultSelect ? resultSelect.value : 'NONE';
                     const black = blackSelect ? blackSelect.value : 'N/A';
-        
+    
                     gamesData.push({board, white, result, black});
                 });
 
@@ -235,20 +233,40 @@
                         },
                         body: JSON.stringify({game_date: formattedDate, games: gamesData})
                     });
-                
+    
                     if (response.status === 401) {
                         window.location.href = '{% url "login" %}';
                     } else if (!response.ok) {
-                        throw new Error('Bad response from server');
+                        const errorData = await response.json().catch(() => null);  
+                        let errorMessage = 'There was a problem saving the game results.';
+    
+                        if (errorData && errorData.message) {
+                            errorMessage += `\nError details: ${errorData.message}`;
+                        }
+    
+                        throw new Error(errorMessage);
                     } else {
                         const data = await response.json();
                         if (data.status === 'success') {
                             alert('Game results sent successfully!');
                         } else {
-                            alert('Error sending game results\n' + data.message);
+                            let errorDetails = data.message || 'An unknown error occurred.';
+    
+                            if (data.added_games && data.added_games.length > 0) {
+                                errorDetails += `\n\nAdded games:\n- ${data.added_games.join('\n- ')}`;
+                            }
+                            if (data.deactivated_games && data.deactivated_games.length > 0) {
+                                errorDetails += `\n\nDeactivated games:\n- ${data.deactivated_games.join('\n- ')}`;
+                            }
+                            if (data.updated_games && data.updated_games.length > 0) {
+                                errorDetails += `\n\nUpdated games:\n- ${data.updated_games.join('\n- ')}`;
+                            }
+    
+                            alert(`Error sending game results:\n${errorDetails}`);
                         }
                     }
                 } catch (error) {
+                    alert(`Error submitting game results: ${error.message || error}`);
                     console.error('Error submitting game results:', error);
                 }
             });
