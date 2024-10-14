@@ -110,7 +110,7 @@ def update_games(request):
             # Prepare game data for the response
             games_data = []
             for game in games:
-                if game.result == 'NONE':
+                if game.result == 'NONE' or game.result == 'U':
                     result = ''
                 else:
                     result = game.result
@@ -237,6 +237,9 @@ def save_games(request):
             deactivated_games_report = []
             updated_games_report = []
 
+            # List of Boards that will have both players getting a ratings change
+            games_with_results = []
+
             user = request.user
 
             with transaction.atomic():
@@ -249,6 +252,9 @@ def save_games(request):
                         black_player = Player.objects.get(first_name=details['black'].split(', ')[1],
                                                           last_name=details['black'].split(', ')[0]) if details[
                                                                                                             'black'] != "N/A" else None
+                        if details['result'] != "NONE":
+                            print(board, "has result")
+                            games_with_results.append(board)
                         Game.add_game(
                             date_of_match=game_date,
                             board_letter=board[0],
@@ -278,6 +284,10 @@ def save_games(request):
                     black_player = Player.objects.get(first_name=details['black'].split(', ')[1],
                                                       last_name=details['black'].split(', ')[0]) if details[
                                                                                                         'black'] != "N/A" else None
+                    if details['result'] != "NONE":
+                        print(board, "has result")
+                        games_with_results.append(board)
+
                     db_game.update_game(
                         date_of_match=game_date,
                         board_letter=board[0],
@@ -297,6 +307,9 @@ def save_games(request):
                 'deactivated_games': deactivated_games_report,
                 'updated_games': updated_games_report
             }
+
+            print(games_with_results)
+
             return JsonResponse(response_data, status=200)
         except json.JSONDecodeError:
             return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'}, status=400)

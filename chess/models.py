@@ -76,6 +76,36 @@ class Player(models.Model):
         return self.name() + " | " + str(self.rating) + " | " + str(
             self.grade) + " | " + lesson_class + " | " + parent_or_guardian + " | " + email + " | " + phone
 
+    def update_rating(cls, self, new_rating, opponent, modified_by):
+        # Mark the current player instance as inactive and set the end date
+        self.is_active = False
+        self.end_at = timezone.now()
+        self.save()
+
+        # Create a new player instance with the updated rating and `is_active=True`
+        # Updates player's last 3 opponents
+        new_player = cls.objects.create(
+            last_name=self.last_name,
+            first_name=self.first_name,
+            rating=new_rating,
+            beginning_rating=self.beginning_rating,
+            grade=self.grade,
+            lesson_class=self.lesson_class,
+            active_member=self.active_member,
+            is_volunteer=self.is_volunteer,
+            parent_or_guardian=self.parent_or_guardian,
+            email=self.email,
+            phone=self.phone,
+            additional_info=self.additional_info,
+            opponent_one=self.opponent,
+            opponent_two=self.opponent_one,
+            opponent_three=self.opponent_two,
+            modified_by=modified_by,
+            is_active=True,
+        )
+
+        return new_player
+
 
 class LessonClass(models.Model):
     name = models.CharField(max_length=100)
@@ -145,15 +175,12 @@ class Game(models.Model):
 
     @classmethod
     def add_game(cls, date_of_match, board_letter, board_number, white, black, result, modified_by):
-        """
-        Add a new game. If a game already exists on the same board and is active, raise an error.
-        """
         # Check if there's an active game on the same board
         if cls.objects.filter(date_of_match=date_of_match, board_letter=board_letter, board_number=board_number, is_active=True).exists():
             raise ValidationError(f"A game on board {board_letter}-{board_number} and {date_of_match} already exists.")
 
         # Create the new game
-        new_game =cls.objects.create(
+        new_game = cls.objects.create(
             date_of_match=date_of_match,
             board_letter=board_letter,
             board_number=board_number,
@@ -166,11 +193,6 @@ class Game(models.Model):
         return new_game
 
     def update_game(self, date_of_match, board_letter, board_number, white, black, result, modified_by):
-        """
-        Update the game with new values using SCD Type 6 logic.
-        - Sets the current instance to inactive, with `end_at` set to the current time.
-        - Creates a new game with the updated values and `is_active=True`.
-        """
         # Mark the current game instance as inactive and close it
         self.is_active = False
         self.end_at = timezone.now()
