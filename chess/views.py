@@ -32,6 +32,26 @@ RATINGS_HELPER = lambda rating, result, expected: round(rating + 32 * (result - 
 CALC_EXPECTED = lambda player_rating, opponent_rating: 1 / (1 + 10 ** ((opponent_rating - player_rating) / 400))
 
 
+def get_players(request):
+    players = Player.objects.filter(active_member=True, is_active=True).order_by('last_name', 'first_name')
+
+    players_data = [
+        {
+            "id": player.id,
+            "first_name": player.first_name,
+            "last_name": player.last_name
+        }
+        for player in players
+    ]
+
+    return JsonResponse({'players': players_data})
+
+
+def get_ratings_sheet(request):
+    players = Player.objects.filter(active_member=True, is_active=True, is_volunteer=False).order_by('-rating', '-grade', 'last_name', 'first_name')
+    return render(request, 'chess/ratings_sheet.html', {'players': players})
+
+
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -170,21 +190,6 @@ def input_results_view(request):
     return render(request, 'chess/input_results.html', context)
 
 
-def get_players(request):
-    players = Player.objects.filter(active_member=True, is_active=True).order_by('last_name', 'first_name')
-
-    players_data = [
-        {
-            "id": player.id,
-            "first_name": player.first_name,
-            "last_name": player.last_name
-        }
-        for player in players
-    ]
-
-    return JsonResponse({'players': players_data})
-
-
 def save_games(request):
     if request.method == 'POST':
         try:
@@ -321,24 +326,30 @@ def save_games(request):
                     black.append(details[1])
                     results.append(details[2])'''
 
-                    if details[2] == 'White':
-                        w_rating = RATINGS_HELPER(details[0].rating, 1,
-                                                  CALC_EXPECTED(details[0].rating, details[1].rating))
-                        b_rating = RATINGS_HELPER(details[1].rating, 0,
-                                                  CALC_EXPECTED(details[1].rating, details[0].rating))
-                    elif details[2] == 'Draw':
-                        w_rating = RATINGS_HELPER(details[0].rating, .5,
-                                                  CALC_EXPECTED(details[0].rating, details[1].rating))
-                        b_rating = RATINGS_HELPER(details[1].rating, .5,
-                                                  CALC_EXPECTED(details[1].rating, details[0].rating))
+                    if details[0] in Player.objects.filter(is_active=True, is_volunteer=True).all() or details[1] in Player.objects.filter(is_active=True, is_volunteer=True).all():
+                        print("Game has a volunteer playing")
+                        continue
+
                     else:
-                        w_rating = RATINGS_HELPER(details[0].rating, 0,
-                                                  CALC_EXPECTED(details[0].rating, details[1].rating))
-                        b_rating = RATINGS_HELPER(details[1].rating, 1,
-                                                  CALC_EXPECTED(details[1].rating, details[0].rating))
-                    # Add player's new rating
-                    Player.update_rating(details[0], w_rating, details[1], user)
-                    Player.update_rating(details[1], b_rating, details[0], user)
+                        if details[2] == 'White':
+                            w_rating = RATINGS_HELPER(details[0].rating, 1,
+                                                      CALC_EXPECTED(details[0].rating, details[1].rating))
+                            b_rating = RATINGS_HELPER(details[1].rating, 0,
+                                                      CALC_EXPECTED(details[1].rating, details[0].rating))
+                        elif details[2] == 'Draw':
+                            w_rating = RATINGS_HELPER(details[0].rating, .5,
+                                                      CALC_EXPECTED(details[0].rating, details[1].rating))
+                            b_rating = RATINGS_HELPER(details[1].rating, .5,
+                                                      CALC_EXPECTED(details[1].rating, details[0].rating))
+                        else:
+                            w_rating = RATINGS_HELPER(details[0].rating, 0,
+                                                      CALC_EXPECTED(details[0].rating, details[1].rating))
+                            b_rating = RATINGS_HELPER(details[1].rating, 1,
+                                                      CALC_EXPECTED(details[1].rating, details[0].rating))
+                        # Add player's new rating
+                        Player.update_rating(details[0], w_rating, details[1], user)
+                        Player.update_rating(details[1], b_rating, details[0], user)
+
                     players.append(f"{details[0].last_name}, {details[0].first_name}")
                     players.append(f"{details[1].last_name}, {details[1].first_name}")
 

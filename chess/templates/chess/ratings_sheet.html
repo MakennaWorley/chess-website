@@ -1,0 +1,14 @@
+<tbody>
+    {% for player in players %}
+        <tr>
+            <td>{{ player.name }}</td>
+            <td>{{ player.rating }}</td>
+            <td>{{ player.improved_rating }}</td>
+            <td>{{ player.grade }}</td>
+            <td>{{ player.lesson_class.name }}</td>
+            <td>{{ player.parent_or_guardian }}</td>
+            <td>{{ player.email }}</td>
+            <td>{{ player.phone }}</td>
+        </tr>
+    {% endfor %}
+</tbody>

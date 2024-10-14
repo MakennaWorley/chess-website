@@ -3,7 +3,7 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 
 from .views import (login_view, signup_view,
-                    home_view, search_results, update_games,
+                    home_view, search_results, update_games, get_ratings_sheet,
                     manual_change_view,
                     input_results_view, get_players, save_games, download_ratings, download_existing_ratings_sheet,
                     pair_view, download_pairings,
@@ -15,6 +15,7 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
 
     path('home/', login_required(home_view), name='home'),
+        path('api/get_ratings_sheet', login_required(get_ratings_sheet), name='get_ratings_sheet'),
         path('update_games/', login_required(update_games), name='update_games'),
     path('manual_change/', login_required(manual_change_view), name='manual_change'),
     path('input_results/', login_required(input_results_view), name='input_results'),

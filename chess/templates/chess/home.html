@@ -97,23 +97,6 @@
             return `${year}-${month}-${day}`;
         }
     
-        form.addEventListener('change', function(event) {
-            const selectedDataType = form.elements['data_type'].value;
-    
-            playersTable.style.display = selectedDataType === 'players' ? '' : 'none';
-            classesTable.style.display = selectedDataType === 'classes' ? '' : 'none';
-            gamesTable.style.display = selectedDataType === 'games' ? '' : 'none';
-    
-            if (selectedDataType === 'games') {
-                datePicker.style.display = '';
-                showGames();
-            } else {
-                datePicker.style.display = 'none';
-            }
-        });
-    
-        gameDateSelect.addEventListener('change', showGames);
-    
         function showGames() {
             const gameDate = formatDate(gameDateSelect.value);
         
@@ -153,6 +136,36 @@
             })
             .catch(error => console.error('Error:', error));
         }
+        
+        form.addEventListener('change', function(event) {
+            const selectedDataType = form.elements['data_type'].value;
     
+            playersTable.style.display = selectedDataType === 'players' ? '' : 'none';
+            classesTable.style.display = selectedDataType === 'classes' ? '' : 'none';
+            gamesTable.style.display = selectedDataType === 'games' ? '' : 'none';
+    
+            if (selectedDataType === 'games') {
+                datePicker.style.display = '';
+                showGames();
+            } else {
+                datePicker.style.display = 'none';
+            }
+        });
+    
+        gameDateSelect.addEventListener('change', showGames);
+        
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchPlayers();
+        
+            function fetchPlayers() {
+                fetch("{% url 'get_ratings_sheet' %}")
+                .then(response => response.text())
+                .then(data => {
+                    const playersTableBody = document.querySelector('#players-table tbody');
+                    playersTableBody.innerHTML = data;
+                })
+                .catch(error => console.error('Error fetching player table:', error));
+            }
+        });
     </script>
 {% endblock %}
