@@ -262,6 +262,9 @@
                             if (data.updated_games && data.updated_games.length > 0) {
                                 successMessage += `\n\nUpdated games:\n- ${data.updated_games.join('\n- ')}`;
                             }
+                            if (data.ratings && data.ratings.length > 0) {
+                                successMessage += `\n\nUpdated these player's ratings:\n- ${data.ratings.join('\n- ')}`;
+                            }
                 
                             alert(successMessage);
                         } else {
@@ -275,6 +278,9 @@
                             }
                             if (data.updated_games && data.updated_games.length > 0) {
                                 errorDetails += `\n\nUpdated games:\n- ${data.updated_games.join('\n- ')}`;
+                            }
+                            if (data.ratings && data.ratings.length > 0) {
+                                errorDetails += `\n\nUpdated these player's ratings:\n- ${data.ratings.join('\n- ')}`;
                             }
     
                             alert(`Error sending game results:\n${errorDetails}`);

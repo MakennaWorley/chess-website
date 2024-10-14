@@ -16,17 +16,21 @@ from .forms import SignUpForm, SearchForm, PairingDateForm, GameSaveForm
 from .models import RegisteredUser, Player, LessonClass, Game  # , Club
 from .write_to_file import write_ratings, write_pairings
 
-GAME_SORT_ORDER = ['G', 'H', 'I', 'J']
+
 CREATED_RATING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'ratings')
 CREATED_PAIRING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'pairings')
 
-
+GAME_SORT_ORDER = ['G', 'H', 'I', 'J']
 BOARDS = [
         *[f"G-{i + 1}" for i in range(5)],
         *[f"H-{i + 1}" for i in range(6)],
         *[f"I-{i + 1}" for i in range(22)],
         *[f"J-{i + 1}" for i in range(22)]
     ]
+
+RATINGS_HELPER = lambda rating, result, expected: round(rating + 32 * (result - expected))
+CALC_EXPECTED = lambda player_rating, opponent_rating: 1 / (1 + 10 ** ((opponent_rating - player_rating) / 400))
+
 
 
 def login_view(request):
@@ -237,8 +241,8 @@ def save_games(request):
             deactivated_games_report = []
             updated_games_report = []
 
-            # List of Boards that will have both players getting a ratings change
-            games_with_results = []
+            # Dictionary of Boards that will have both players getting a ratings change
+            games_with_results = {}
 
             user = request.user
 
@@ -253,8 +257,7 @@ def save_games(request):
                                                           last_name=details['black'].split(', ')[0]) if details[
                                                                                                             'black'] != "N/A" else None
                         if details['result'] != "NONE":
-                            print(board, "has result")
-                            games_with_results.append(board)
+                            games_with_results[board] = [white_player, black_player, details['result']]
                         Game.add_game(
                             date_of_match=game_date,
                             board_letter=board[0],
@@ -278,15 +281,16 @@ def save_games(request):
                 # Update existing games
                 for board, details in updated_games.items():
                     db_game = games_db_keyed[board]
-                    white_player = Player.objects.get(first_name=details['white'].split(', ')[1],
-                                                      last_name=details['white'].split(', ')[0]) if details[
-                                                                                                        'white'] != "N/A" else None
-                    black_player = Player.objects.get(first_name=details['black'].split(', ')[1],
-                                                      last_name=details['black'].split(', ')[0]) if details[
-                                                                                                        'black'] != "N/A" else None
+                    white_player = Player.objects.filter(first_name=details['white'].split(', ')[1],
+                                                         last_name=details['white'].split(', ')[0],
+                                                         is_active=True).first() if details[
+                                                                                    'white'] != "N/A" else None
+                    black_player = Player.objects.filter(first_name=details['black'].split(', ')[1],
+                                                         last_name=details['black'].split(', ')[0],
+                                                         is_active=True).first() if details[
+                                                                                    'black'] != "N/A" else None
                     if details['result'] != "NONE":
-                        print(board, "has result")
-                        games_with_results.append(board)
+                        games_with_results[board] = [white_player, black_player, details['result']]
 
                     db_game.update_game(
                         date_of_match=game_date,
@@ -309,6 +313,36 @@ def save_games(request):
             }
 
             print(games_with_results)
+            players = []
+
+            with transaction.atomic():
+                for game, details in games_with_results.items():
+                    '''white.append(details[0]) # these are player objects
+                    black.append(details[1])
+                    results.append(details[2])'''
+
+                    if details[2] == 'White':
+                        w_rating = RATINGS_HELPER(details[0].rating, 1,
+                                                  CALC_EXPECTED(details[0].rating, details[1].rating))
+                        b_rating = RATINGS_HELPER(details[1].rating, 0,
+                                                  CALC_EXPECTED(details[1].rating, details[0].rating))
+                    elif details[2] == 'Draw':
+                        w_rating = RATINGS_HELPER(details[0].rating, .5,
+                                                  CALC_EXPECTED(details[0].rating, details[1].rating))
+                        b_rating = RATINGS_HELPER(details[1].rating, .5,
+                                                  CALC_EXPECTED(details[1].rating, details[0].rating))
+                    else:
+                        w_rating = RATINGS_HELPER(details[0].rating, 0,
+                                                  CALC_EXPECTED(details[0].rating, details[1].rating))
+                        b_rating = RATINGS_HELPER(details[1].rating, 1,
+                                                  CALC_EXPECTED(details[1].rating, details[0].rating))
+                    # Add player's new rating
+                    Player.update_rating(details[0], w_rating, details[1], user)
+                    Player.update_rating(details[1], b_rating, details[0], user)
+                    players.append(f"{details[0].last_name}, {details[0].first_name}")
+                    players.append(f"{details[1].last_name}, {details[1].first_name}")
+
+            response_data['ratings'] = players
 
             return JsonResponse(response_data, status=200)
         except json.JSONDecodeError:

@@ -56,7 +56,7 @@ class Player(models.Model):
         return self.last_name + ", " + self.first_name
 
     def improved_rating(self):
-        return self.beginning_rating - self.rating
+        return self.rating - self.beginning_rating
 
     def search_view(self):
         lesson_class = self.lesson_class
@@ -76,15 +76,19 @@ class Player(models.Model):
         return self.name() + " | " + str(self.rating) + " | " + str(
             self.grade) + " | " + lesson_class + " | " + parent_or_guardian + " | " + email + " | " + phone
 
-    def update_rating(cls, self, new_rating, opponent, modified_by):
+    def update_rating(self, new_rating, opponent, modified_by):
         # Mark the current player instance as inactive and set the end date
         self.is_active = False
         self.end_at = timezone.now()
         self.save()
 
+        # Preventing a player from having a rating less than 100
+        if new_rating < 100:
+            new_rating = 100
+
         # Create a new player instance with the updated rating and `is_active=True`
         # Updates player's last 3 opponents
-        new_player = cls.objects.create(
+        new_player = Player.objects.create(
             last_name=self.last_name,
             first_name=self.first_name,
             rating=new_rating,
@@ -97,7 +101,7 @@ class Player(models.Model):
             email=self.email,
             phone=self.phone,
             additional_info=self.additional_info,
-            opponent_one=self.opponent,
+            opponent_one=opponent,
             opponent_two=self.opponent_one,
             opponent_three=self.opponent_two,
             modified_by=modified_by,
@@ -140,7 +144,7 @@ class Game(models.Model):
         WHITE = 'White'
         BLACK = 'Black'
         DRAW = 'Draw'
-        UNKNOWN = 'U'
+        UNKNOWN = ''
 
     date_of_match = models.DateField()
     # club = models.ForeignKey(Club, on_delete=models.RESTRICT)
