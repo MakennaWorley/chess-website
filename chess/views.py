@@ -389,20 +389,20 @@ def download_pairings(request):
             file_name = f'Pairings_{date_of_match}.xlsx'
             file_path = os.path.join(CREATED_PAIRING_FILES_DIR, file_name)
 
-            if file_name in os.listdir(CREATED_PAIRING_FILES_DIR):
-                with open(file_path, 'rb') as f:
-                    response = HttpResponse(f.read(),
-                                            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-                    response['Content-Disposition'] = f'attachment; filename={file_name}'
-                    return response
-            else:
-                file_path = write_pairings(date_of_match)
+            # if file_name in os.listdir(CREATED_PAIRING_FILES_DIR):
+            #     with open(file_path, 'rb') as f:
+            #         response = HttpResponse(f.read(),
+            #                                 content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            #         response['Content-Disposition'] = f'attachment; filename={file_name}'
+            #         return response
+            # else:
+            file_path = write_pairings(date_of_match)
 
-                with open(file_path, 'rb') as f:
-                    response = HttpResponse(f.read(),
-                                            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-                    response['Content-Disposition'] = f'attachment; filename=Pairings_{date_of_match}.xlsx'
-                    return response
+            with open(file_path, 'rb') as f:
+                response = HttpResponse(f.read(),
+                                        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                response['Content-Disposition'] = f'attachment; filename=Pairings_{date_of_match}.xlsx'
+                return response
     else:
         form = PairingDateForm()
 

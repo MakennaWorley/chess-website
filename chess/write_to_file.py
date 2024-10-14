@@ -42,8 +42,8 @@ def write_pairings(submitted_date):
     games = Game.objects.filter(date_of_match=submitted_date, is_active=True)
 
     for game in games:
-        white_player = game.white.name() if game.white else "No White Player"
-        black_player = game.black.name() if game.black else "No Black Player"
+        white_player = game.white.name() if game.white else ""
+        black_player = game.black.name() if game.black else ""
         board = game.get_board()
 
         matching_row = None
@@ -68,8 +68,7 @@ def write_pairings(submitted_date):
         else:
             print(f"No matching board found for game: {game}")
 
-    date_str = submitted_date.strftime('%Y-%m-%d')
-    new_file_path = os.path.join(settings.BASE_DIR, 'files', 'pairings', f'Pairings_{date_str}.xlsx')
+    new_file_path = os.path.join(settings.BASE_DIR, 'files', 'pairings', f'Pairings_{submitted_date}.xlsx')
     os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
     workbook.save(new_file_path)
 
