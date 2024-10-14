@@ -171,7 +171,7 @@
                                     </td>
                                     <td>
                                         <select name="result-${board}" class="result-select">
-                                            <option value="NONE" ${game && game.result === 'White' ? 'selected' : ''}></option>
+                                            <option value="NONE" ${game && game.result === 'U' ? 'selected' : ''}></option>
                                             <option value="White" ${game && game.result === 'White' ? 'selected' : ''}>White</option>
                                             <option value="Black" ${game && game.result === 'Black' ? 'selected' : ''}>Black</option>
                                             <option value="Draw" ${game && game.result === 'Draw' ? 'selected' : ''}>Draw</option>

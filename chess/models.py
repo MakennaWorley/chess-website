@@ -144,7 +144,7 @@ class Game(models.Model):
         WHITE = 'White'
         BLACK = 'Black'
         DRAW = 'Draw'
-        UNKNOWN = ''
+        UNKNOWN = 'U'
 
     date_of_match = models.DateField()
     # club = models.ForeignKey(Club, on_delete=models.RESTRICT)
