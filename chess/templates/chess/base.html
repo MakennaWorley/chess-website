@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chess App</title>
+    <title>ChessWeb</title>
     <link rel="stylesheet" href="../../static/main.css">
     <script src="../../static/main.js"></script>
 </head>
 <body>
     {% if user.is_authenticated %}
-        <h1 class="center">Welcome, {{ user.username }}!</h1>
+        <div class="block-container">
+            <div class="block-text">
+                <h1 class="center">Welcome, {{ user.username }}!</h1>
+                <p class="center">ChessWeb is a web based application designed for Oakwood Elementary's Chess Club with the main purpose of simplifying
+                    the process of updating ratings and pairing the members. It is designed and maintained by Makenna Worley using the Django
+                    framework.</p>
+            </div>
+        </div>
 
         <nav>
             <ul>

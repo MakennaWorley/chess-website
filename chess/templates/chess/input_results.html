@@ -2,10 +2,10 @@
 
 {% block content %}
     <div class="block-container-list">
-        <div class="block-text">
-            <h1 class="center">Update Game Results</h1>
+        <div class="block-text center">
+            <h1>Update Game Results</h1>
 
-            <div id="date-picker" class="center">
+            <div id="date-picker">
                 <label for="game-date">Select Date:</label>
                 <select id="game-date" name="game-date">
                     {% for game in games_by_date %}
@@ -27,7 +27,7 @@
                             <tr>
                                 <th>Board</th>
                                 <th>White Player</th>
-                                <th>Result</th>
+                                <tdh>Result</tdh>
                                 <th>Black Player</th>
                             </tr>
                             </thead>
@@ -49,15 +49,15 @@
         </div>
 
 
-        <div class="block-text">
-            <h1 class="center">Download Ratings:</h1>
-            <div class="center">
+        <div class="block-text center">
+            <h1>Download Ratings Sheet</h1>
+            <div>
                 <a href="{% url 'download_ratings' %}">
                     <button type="button">Create and Download Current Ratings</button>
                 </a>
             </div>
             <br>
-            <form method="get" action="{% url 'download_existing_ratings_sheet' %}" class="center">
+            <form method="get" action="{% url 'download_existing_ratings_sheet' %}">
                 <label for="file">Choose a pairing sheet:</label>
                 <select name="file" id="file">
                     {% for filename in existing_files %}

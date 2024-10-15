@@ -6,7 +6,7 @@ from .views import (login_view, signup_view,
                     home_view, search_results, update_games, get_ratings_sheet,
                     manual_change_view,
                     input_results_view, get_players, save_games, download_ratings, download_existing_ratings_sheet,
-                    pair_view, download_pairings,
+                    pair_view, new_pairings, download_pairings,
                     help_view, )
 
 urlpatterns = [
@@ -24,6 +24,7 @@ urlpatterns = [
         path('download_ratings/', login_required(download_ratings), name='download_ratings'),
         path('download_existing_ratings_sheet/', login_required(download_existing_ratings_sheet), name='download_existing_ratings_sheet'),
     path('pair/', login_required(pair_view), name='pair'),
+        path('new_pairings/', login_required(new_pairings), name='new_pairings'),
         path('download_pairings/', login_required(download_pairings), name='download_pairings'),
     path('help/', login_required(help_view), name='help'),
 

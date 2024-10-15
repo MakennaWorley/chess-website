@@ -391,6 +391,10 @@ def pair_view(request):
     return render(request, 'chess/pair.html', {'form': form})
 
 
+def new_pairings(request):
+    pass
+
+
 def download_pairings(request):
     if request.method == 'POST':
         form = PairingDateForm(request.POST)
