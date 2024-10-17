@@ -392,7 +392,47 @@ def pair_view(request):
 
 
 def new_pairings(request):
-    pass
+    if request.method == 'POST':
+        try:
+            body_unicode = request.body.decode('utf-8')
+            body_data = json.loads(body_unicode)
+
+            game_date = body_data.get('game_date')
+            games = body_data.get('games')
+
+            print(game_date)
+
+            user = request.user
+
+            for game in games:
+                board = game.get('board')
+                white_player_name = game.get('whitePlayer')
+                black_player_name = game.get('blackPlayer')
+                print(board, white_player_name, black_player_name)
+
+                white_player = Player.objects.filter(first_name=white_player_name.split(', ')[1],
+                                                     last_name=white_player_name.split(', ')[0],
+                                                     is_active=True).first()
+                black_player = Player.objects.filter(first_name=black_player_name.split(', ')[1],
+                                                     last_name=black_player_name.split(', ')[0],
+                                                     is_active=True).first()
+                print(white_player.name, black_player.name)
+
+                Game.add_game(
+                    date_of_match=game_date,
+                    board_letter=board[0],
+                    board_number=int(board[2:]),
+                    white=white_player,
+                    black=black_player,
+                    result='',
+                    modified_by=user
+                )
+
+            return JsonResponse({'status': 'success'})
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'}, status=400)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
 
 def download_pairings(request):

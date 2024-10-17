@@ -164,20 +164,34 @@
 
             document.getElementById('newGamesForm').addEventListener('submit', function (event) {
                 event.preventDefault();
-                const formData = new FormData(this);
+
+                const selectedDate = document.getElementById('selectedDate').value;
+                const formattedDate = formatDate(selectedDate);
+
+                gamesData = []
+
+                document.querySelectorAll('#newGamesTableBody tr').forEach((row, index) => {
+                    const board = row.querySelector('td:nth-child(1)').textContent;
+                    const whitePlayer = row.querySelector('td:nth-child(2) select').value;
+                    const blackPlayer = row.querySelector('td:nth-child(3) select').value;
+
+                    if (whitePlayer !== "N/A" && blackPlayer !== "N/A") {
+                        gamesData.push({ board, whitePlayer, blackPlayer });
+                    }
+                });
 
                 fetch("{% url 'new_pairings' %}", {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token }}'
                     },
-                    body: formData
+                    body: JSON.stringify({game_date: formattedDate, games: gamesData})
                 }).then(response => {
                     if (response.ok) {
-                        alert('Games saved successfully!');
+                        alert('Pairings saved successfully!');
                         gameModal.style.display = 'none';
                     } else {
-                        alert('Error saving games');
+                        alert('Error pairing games');
                     }
                 });
             });
