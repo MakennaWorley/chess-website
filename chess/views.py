@@ -20,7 +20,7 @@ from .write_to_file import write_ratings, write_pairings
 CREATED_RATING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'ratings')
 CREATED_PAIRING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'pairings')
 
-GAME_SORT_ORDER = ['G', 'H', 'I', 'J']
+BOARD_SORT_ORDER = ['G', 'H', 'I', 'J']
 BOARDS = [
         *[f"G-{i + 1}" for i in range(5)],
         *[f"H-{i + 1}" for i in range(6)],
@@ -394,45 +394,134 @@ def pair_view(request):
 def new_pairings(request):
     if request.method == 'POST':
         try:
-            body_unicode = request.body.decode('utf-8')
-            body_data = json.loads(body_unicode)
+            unicode = request.body.decode('utf-8')
+            data = json.loads(unicode)
 
-            game_date = body_data.get('game_date')
-            games = body_data.get('games')
+            game_date = data.get('game_date')
+            games = data.get('games')
+            separate_classes = data.get('separate_classes', False)
 
-            print(game_date)
+            print(game_date, separate_classes)
+
+            used_boards = []
+            paired_players = set()
 
             user = request.user
 
-            for game in games:
-                board = game.get('board')
-                white_player_name = game.get('whitePlayer')
-                black_player_name = game.get('blackPlayer')
-                print(board, white_player_name, black_player_name)
+            # Manually created games
+            with transaction.atomic():
+                for game in games:
+                    board = game.get('board')
+                    white_player_name = game.get('whitePlayer')
+                    black_player_name = game.get('blackPlayer')
+                    print(board, white_player_name, black_player_name)
 
-                white_player = Player.objects.filter(first_name=white_player_name.split(', ')[1],
-                                                     last_name=white_player_name.split(', ')[0],
-                                                     is_active=True).first()
-                black_player = Player.objects.filter(first_name=black_player_name.split(', ')[1],
-                                                     last_name=black_player_name.split(', ')[0],
-                                                     is_active=True).first()
-                print(white_player.name, black_player.name)
+                    white_player = Player.objects.filter(first_name=white_player_name.split(', ')[1],
+                                                         last_name=white_player_name.split(', ')[0],
+                                                         is_active=True).first()
+                    black_player = Player.objects.filter(first_name=black_player_name.split(', ')[1],
+                                                         last_name=black_player_name.split(', ')[0],
+                                                         is_active=True).first()
 
-                Game.add_game(
-                    date_of_match=game_date,
-                    board_letter=board[0],
-                    board_number=int(board[2:]),
-                    white=white_player,
-                    black=black_player,
-                    result='',
-                    modified_by=user
-                )
+                    used_boards.append(board)
+                    paired_players.add(white_player)
+                    paired_players.add(black_player)
+                    print(white_player.name, black_player.name)
 
-            return JsonResponse({'status': 'success'})
+                    Game.add_game(
+                        date_of_match=game_date,
+                        board_letter=board[0],
+                        board_number=int(board[2:]),
+                        white=white_player,
+                        black=black_player,
+                        result='',
+                        modified_by=user
+                    )
+
+            message = "All manual pairings were successfully created."
+            unused_boards = [board for board in BOARDS if board not in used_boards]
+            unpaired_players = [player for player in Player.objects.filter(is_active=True, is_volunteer=False) if player not in paired_players]
+
+            print(unused_boards, unpaired_players)
+            print(pair_players(unpaired_players, separate_classes))
+
+            return JsonResponse({'status': 'success', 'message': message}, status=200)
         except json.JSONDecodeError:
             return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'}, status=400)
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+
+def pair_players(players, separate_classes):
+    # players: list of Player objects with ratings
+    # games: list of past games with player color info
+    # separate_classes_flag: whether to separate Krishnam and Sam's classes
+
+    pairings = []
+    unpaired = []
+
+    if separate_classes:
+        krishnam_class = [p for p in players if p.lesson_class.name == 'Krishnam']
+        sam_class = [p for p in players if p.lesson_class.name == 'Sam']
+        other_class = [p for p in players if p.lesson_class.name not in ['Krishnam', 'Sam']]
+    else:
+        krishnam_class = []
+        sam_class = []
+        other_class = players
+
+    def pair_within_class(class_players):
+        class_players = sorted(class_players, key=lambda p: p.rating)
+
+        for player in class_players:
+            if player.opponent_one:
+                potential_opponents = [p for p in class_players if p != player
+                                       and abs(player.rating - p.rating) <= 20
+                                       and p not in [player.opponent_one, player.opponent_two, player.opponent_three]]
+
+                potential_opponents = sorted(potential_opponents, key=lambda p: abs(player.rating - p.rating))
+
+                if potential_opponents:
+                    opponent = potential_opponents[0]
+                    last_game_player = get_last_game(player)
+                    last_game_opponent = get_last_game(opponent)
+
+                    if last_game_player and last_game_opponent:
+                        if last_game_player == last_game_opponent:
+                            if player.rating < opponent.rating:
+                                pairings.append((player, opponent, "white", "black"))
+                            else:
+                                pairings.append((opponent, player, "white", "black"))
+                        else:
+                            if last_game_player == "white":
+                                pairings.append((player, opponent, "black", "white"))
+                            else:
+                                pairings.append((player, opponent, "white", "black"))
+            else:
+                unpaired.append(player)
+
+    def get_last_game(player):
+        if not player.opponent_one:
+            return None
+
+        last_game = Game.objects.filter(
+            (Q(white=player) & Q(black=player.opponent_one)) |
+            (Q(white=player.opponent_one) & Q(black=player))
+        ).order_by('-date_of_match').first()
+
+        if last_game:
+            if last_game.white == player:
+                return "white"
+            elif last_game.black == player:
+                return "black"
+
+    if separate_classes:
+        pair_within_class(krishnam_class)
+        pair_within_class(sam_class)
+    else:
+        pair_within_class(other_class)
+
+    return pairings, unpaired
+
 
 
 def download_pairings(request):

@@ -85,7 +85,7 @@ class PairingDateForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        game_dates = Game.objects.values_list('date_of_match', flat=True).distinct()
+        game_dates = Game.objects.values_list('date_of_match', flat=True).distinct().order_by('-date_of_match')
         self.fields['date'].choices = [(date, date) for date in game_dates]
 
 

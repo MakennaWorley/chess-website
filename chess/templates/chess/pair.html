@@ -29,7 +29,10 @@
                             <tbody id="newGamesTableBody">
                             </tbody>
                         </table>
-                        <button type="submit">Save Games</button>
+                        
+                        <label for="separateClasses">Pair Sam's and Krishnam's class separate?:</label>
+                        <input type="checkbox" id="separateClasses" name="separate_classes" value="true"><br>
+                        <button type="submit">Pair!</button>
                     </form>
                 </div>
             </div>
@@ -167,6 +170,8 @@
 
                 const selectedDate = document.getElementById('selectedDate').value;
                 const formattedDate = formatDate(selectedDate);
+                
+                const separateClassesChecked = document.getElementById('separateClasses').checked;
 
                 gamesData = []
 
@@ -185,7 +190,11 @@
                     headers: {
                         'X-CSRFToken': '{{ csrf_token }}'
                     },
-                    body: JSON.stringify({game_date: formattedDate, games: gamesData})
+                    body: JSON.stringify({
+                        game_date: formattedDate, 
+                        games: gamesData, 
+                        separate_classes: separateClassesChecked
+                    })
                 }).then(response => {
                     if (response.ok) {
                         alert('Pairings saved successfully!');
