@@ -16,17 +16,16 @@ from .forms import SignUpForm, SearchForm, PairingDateForm, GameSaveForm
 from .models import RegisteredUser, Player, LessonClass, Game  # , Club
 from .write_to_file import write_ratings, write_pairings
 
-
 CREATED_RATING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'ratings')
 CREATED_PAIRING_FILES_DIR = os.path.join(os.path.dirname(__file__), '../files', 'pairings')
 
 BOARD_SORT_ORDER = ['G', 'H', 'I', 'J']
 BOARDS = [
-        *[f"G-{i + 1}" for i in range(5)],
-        *[f"H-{i + 1}" for i in range(6)],
-        *[f"I-{i + 1}" for i in range(22)],
-        *[f"J-{i + 1}" for i in range(22)]
-    ]
+    *[f"G-{i + 1}" for i in range(5)],
+    *[f"H-{i + 1}" for i in range(6)],
+    *[f"I-{i + 1}" for i in range(22)],
+    *[f"J-{i + 1}" for i in range(22)]
+]
 
 RATINGS_HELPER = lambda rating, result, expected: round(rating + 32 * (result - expected))
 CALC_EXPECTED = lambda player_rating, opponent_rating: 1 / (1 + 10 ** ((opponent_rating - player_rating) / 400))
@@ -48,9 +47,11 @@ def get_players(request):
 
 
 def get_ratings_sheet(request):
-    players = Player.objects.filter(active_member=True, is_active=True, is_volunteer=False).order_by('-rating', '-grade', 'last_name', 'first_name')
+    players = Player.objects.filter(active_member=True, is_active=True, is_volunteer=False).order_by('-rating',
+                                                                                                     '-grade',
+                                                                                                     'last_name',
+                                                                                                     'first_name')
     return render(request, 'chess/ratings_sheet.html', {'players': players})
-
 
 
 def login_view(request):
@@ -109,7 +110,10 @@ def home_view(request):
     games_by_date = Game.objects.filter(is_active=True).values('date_of_match').annotate(
         game_count=Count('id')).order_by('-date_of_match')
 
-    players = Player.objects.filter(active_member=True, is_active=True, is_volunteer=False).order_by('-rating', '-grade', 'last_name', 'first_name')
+    players = Player.objects.filter(active_member=True, is_active=True, is_volunteer=False).order_by('-rating',
+                                                                                                     '-grade',
+                                                                                                     'last_name',
+                                                                                                     'first_name')
     class_list = LessonClass.objects.filter(is_active=True)
 
     context = {
@@ -204,21 +208,21 @@ def save_games(request):
                 game['board']: {key: value for key, value in game.items() if key != 'board'} for game in games
                 if not (game['white'] == "N/A" and game['black'] == "N/A")
             }
-            #print(games_keyed)
+            # print(games_keyed)
 
             games_db = Game.objects.filter(date_of_match=game_date)
             games_db_keyed = {
                 game.get_board(): game for game in games_db
             }
-            #print(games_db_keyed)
+            # print(games_db_keyed)
 
-            #games not in the db
+            # games not in the db
             new_games_to_db = {
                 board: details for board, details in games_keyed.items() if board not in games_db_keyed
             }
             print("Games being added:", new_games_to_db)
 
-            #games not in data
+            # games not in data
             games_not_in_data = {
                 board: game for board, game in games_db_keyed.items() if board not in games_keyed
             }
@@ -289,11 +293,11 @@ def save_games(request):
                     white_player = Player.objects.filter(first_name=details['white'].split(', ')[1],
                                                          last_name=details['white'].split(', ')[0],
                                                          is_active=True).first() if details[
-                                                                                    'white'] != "N/A" else None
+                                                                                        'white'] != "N/A" else None
                     black_player = Player.objects.filter(first_name=details['black'].split(', ')[1],
                                                          last_name=details['black'].split(', ')[0],
                                                          is_active=True).first() if details[
-                                                                                    'black'] != "N/A" else None
+                                                                                        'black'] != "N/A" else None
                     if details['result'] != "NONE":
                         games_with_results[board] = [white_player, black_player, details['result']]
 
@@ -326,7 +330,8 @@ def save_games(request):
                     black.append(details[1])
                     results.append(details[2])'''
 
-                    if details[0] in Player.objects.filter(is_active=True, is_volunteer=True).all() or details[1] in Player.objects.filter(is_active=True, is_volunteer=True).all():
+                    if details[0] in Player.objects.filter(is_active=True, is_volunteer=True).all() or details[
+                        1] in Player.objects.filter(is_active=True, is_volunteer=True).all():
                         print("Game has a volunteer playing")
                         continue
 
@@ -440,7 +445,9 @@ def new_pairings(request):
 
             message = "All manual pairings were successfully created."
             unused_boards = [board for board in BOARDS if board not in used_boards]
-            unpaired_players = [player for player in Player.objects.filter(is_active=True, is_volunteer=False) if player not in paired_players]
+            unpaired_players = list(Player.objects.filter(is_active=True, is_volunteer=False).exclude(
+                id__in=[player.id for player in paired_players]).order_by('-rating', '-grade', 'last_name',
+                                                                          'first_name'))
 
             print(unused_boards, unpaired_players)
             print(pair_players(unpaired_players, separate_classes))
@@ -454,7 +461,6 @@ def new_pairings(request):
 
 def pair_players(players, separate_classes):
     # players: list of Player objects with ratings
-    # games: list of past games with player color info
     # separate_classes_flag: whether to separate Krishnam and Sam's classes
 
     pairings = []
@@ -469,59 +475,75 @@ def pair_players(players, separate_classes):
         sam_class = []
         other_class = players
 
-    def pair_within_class(class_players):
-        class_players = sorted(class_players, key=lambda p: p.rating)
+    print(krishnam_class)
+    print(sam_class)
+    print(other_class)
 
-        for player in class_players:
-            if player.opponent_one:
-                potential_opponents = [p for p in class_players if p != player
-                                       and abs(player.rating - p.rating) <= 20
-                                       and p not in [player.opponent_one, player.opponent_two, player.opponent_three]]
-
-                potential_opponents = sorted(potential_opponents, key=lambda p: abs(player.rating - p.rating))
-
-                if potential_opponents:
-                    opponent = potential_opponents[0]
-                    last_game_player = get_last_game(player)
-                    last_game_opponent = get_last_game(opponent)
-
-                    if last_game_player and last_game_opponent:
-                        if last_game_player == last_game_opponent:
-                            if player.rating < opponent.rating:
-                                pairings.append((player, opponent, "white", "black"))
-                            else:
-                                pairings.append((opponent, player, "white", "black"))
-                        else:
-                            if last_game_player == "white":
-                                pairings.append((player, opponent, "black", "white"))
-                            else:
-                                pairings.append((player, opponent, "white", "black"))
-            else:
-                unpaired.append(player)
-
-    def get_last_game(player):
-        if not player.opponent_one:
-            return None
-
-        last_game = Game.objects.filter(
-            (Q(white=player) & Q(black=player.opponent_one)) |
-            (Q(white=player.opponent_one) & Q(black=player))
-        ).order_by('-date_of_match').first()
-
-        if last_game:
-            if last_game.white == player:
-                return "white"
-            elif last_game.black == player:
-                return "black"
-
-    if separate_classes:
-        pair_within_class(krishnam_class)
-        pair_within_class(sam_class)
-    else:
-        pair_within_class(other_class)
+    # if separate_classes:
+    #     pair_within_class(pairings, krishnam_class)
+    #     pair_within_class(pairings, sam_class)
+    pair_within_class(pairings, unpaired, other_class)
 
     return pairings, unpaired
 
+
+def pair_within_class(pairings, unpaired, class_players):
+
+    for player in class_players:
+        print(f"Trying to pair {player.first_name} {player.last_name}")
+        if player.opponent_one:
+            potential_opponents = [p for p in class_players if p != player
+                                   and abs(player.rating - p.rating) <= 20
+                                   and p not in [player.opponent_one, player.opponent_two, player.opponent_three]]
+
+            print(
+                f"Potential opponents for {player.first_name} {player.last_name}: {[p.first_name + ' ' + p.last_name for p in potential_opponents]}")
+            print(potential_opponents)
+
+            if potential_opponents:
+                print("Checking first potential opponent", potential_opponents[0])
+                opponent = potential_opponents[0]
+                last_game_player = get_last_game(player)
+                last_game_opponent = get_last_game(opponent)
+                print(last_game_player, last_game_opponent)
+
+                if last_game_player and last_game_opponent:
+                    if last_game_player == last_game_opponent:
+                        if player.rating < opponent.rating:
+                            pairings.append((player, opponent, "white", "black"))
+                        else:
+                            pairings.append((opponent, player, "white", "black"))
+                        print(
+                            f"Paired {player.first_name} {player.last_name} with {opponent.first_name} {opponent.last_name}")
+                    else:
+                        if last_game_player == "white":
+                            pairings.append((player, opponent, "black", "white"))
+                        else:
+                            pairings.append((player, opponent, "white", "black"))
+                        print(
+                            f"Paired {player.first_name} {player.last_name} with {opponent.first_name} {opponent.last_name} (color adjusted)")
+            else:  # still needs to pair
+                print(f"No valid opponents found for {player.first_name} {player.last_name}, adding to unpaired")
+                unpaired.append(player)
+        else:  # still needs to pair
+            print(f"Player {player.first_name} {player.last_name} has no recent opponents, adding to unpaired")
+            unpaired.append(player)
+        print()
+
+    return pairings, unpaired
+
+
+def get_last_game(player):
+    last_game = Game.objects.filter(
+        (Q(white=player) & Q(black=player.opponent_one)) |
+        (Q(white=player.opponent_one) & Q(black=player))
+    ).order_by('-date_of_match').first()
+
+    if last_game:
+        if last_game.white == player:
+            return "white"
+        elif last_game.black == player:
+            return "black"
 
 
 def download_pairings(request):
